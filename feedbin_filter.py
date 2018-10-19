@@ -16,7 +16,6 @@ class FeedbinFilter(object):
         self.tech_matches = []
         self.budget_matches = []
         self.email_matches = []
-        self.perfect_matches = []
 
         self.authenticate()
 
@@ -59,21 +58,27 @@ class FeedbinFilter(object):
 
         print '{} new entries'.format(len(entries))
         self.freelance_matches = self._filter(freelace_filters, entries)
-        print '{} leads satisfy freelance filters'.format(len(self.freelance_matches))
         self._save_file('freelance_matches.json', self.freelance_matches)
 
         self.tech_matches = self._filter(tech_filters, self.freelance_matches)
-        print '{} leads match tech filters'.format(len(self.tech_matches))
         self._save_file('tech_matches.json', self.tech_matches)
 
+        self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
+
         self.budget_matches = self._filter_regex(r'\$\d+.+', self.tech_matches)
-        print '{} leads match budget filters'.format(len(self.budget_matches))
         self._save_file('budget_matches.json', self.budget_matches)
+        self.tech_matches = self.remove_duplicates(self.tech_matches, self.budget_matches)
 
         email_regex = r'[\w\.-]+@[\w\.-]+'
         self.email_matches = self._filter_regex(email_regex, self.tech_matches)
-        print '{} leads match email filters'.format(len(self.email_matches))
         self._save_file('email_matches.json', self.email_matches)
+
+        self.tech_matches = self.remove_duplicates(self.tech_matches, self.email_matches)
+
+        print '{} leads satisfy freelance filters'.format(len(self.freelance_matches))
+        print '{} leads match tech filters'.format(len(self.tech_matches))
+        print '{} leads match budget filters'.format(len(self.budget_matches))
+        print '{} leads match email filters'.format(len(self.email_matches))
 
 
     def filter_base_on_date(self, entries, days_ago):
@@ -84,6 +89,21 @@ class FeedbinFilter(object):
             if entry['published'] > days_dt:
                 filtered.append(entry)
         return filtered
+
+    def remove_duplicates(self, list1, list2):
+        """Deletes all the entries in list1 that are
+            in list2"""
+        temp1 = []
+        temp2 = []
+        for l1_entry in list1:
+            for l2_entry in list2:
+                if cmp(l1_entry, l2_entry) == 0:
+                    temp1.append(l1_entry)
+
+            if l1_entry not in temp1:
+                temp2.append(l1_entry)
+
+        return temp2
 
     def clean_html(self, raw_html):
       cleanr = re.compile(r'<[^>]+>')
@@ -115,6 +135,7 @@ class FeedbinFilter(object):
                     filtered_data.append(entry)
                     break
         return filtered_data
+
 if __name__== "__main__":
 
     parser = argparse.ArgumentParser()
