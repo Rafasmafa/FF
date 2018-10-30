@@ -22,6 +22,7 @@ class FeedbinFilter(object):
         self.html_handler.ignore_images = True
         self.html_handler.ignore_tables = True
         self.html_handler.ignore_emphasis = True
+        self.html_handler.ignore_links = True
         self.authenticate()
 
 
@@ -49,19 +50,23 @@ class FeedbinFilter(object):
 
         freelace_filters = ['freelance', 'remote', 'contract',
                             'short term', 'long term', 'free lance'
-                            'contractor', 'gig', 'part time', 'anywhere']
+                            'contractor', 'gig', 'anywhere', 'project']
 
         tech_filters = ['python', 'php', 'wordpress',
                         'web developer', 'ruby', 'django',
                         'django', 'flask', 'drupal', 'ios',
                         'android', 'node', 'meteor', 'bitcoin',
-                        'solidity']
+                        'solidity', 'web development', 'web developer',
+                        'web designer', 'web design', 'website', 'react',
+                        'rails', 'crypo', 'coin', 'smart contract', 'html',
+                        'css', 'javascript', 'js', 'angular', 'vue']
 
 
         entries = json.loads(json_obj)
         entries = self.filter_based_on_date(entries, days_ago)
 
         print '{} new entries'.format(len(entries))
+        entries = self.filter_negative_keywords(entries)
         self.freelance_matches = self._filter(freelace_filters, entries, to_markdown=True)
         self._save_file('freelance_matches.json', self.freelance_matches)
 
@@ -70,19 +75,21 @@ class FeedbinFilter(object):
 
         self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
 
-        self.budget_matches = self._filter_budget(5000, self.tech_matches)
-        self._save_file('budget_matches.json', self.budget_matches)
+        #=======================================================================
+        # self.budget_matches = self._filter_budget(5000, self.tech_matches)
+        # self._save_file('budget_matches.json', self.budget_matches)
+        #=======================================================================
 
         email_regex = r'[\w\.-]+@[\w\.-]+'
         self.email_matches = self._filter_regex(email_regex, self.tech_matches)
         self._save_file('email_matches.json', self.email_matches)
 
-        self.tech_matches = self.remove_duplicates(self.tech_matches, self.budget_matches)
+        #self.tech_matches = self.remove_duplicates(self.tech_matches, self.budget_matches)
         self.tech_matches = self.remove_duplicates(self.tech_matches, self.email_matches)
 
         print '{} leads satisfy freelance filters'.format(len(self.freelance_matches))
         print '{} leads match tech filters'.format(len(self.tech_matches))
-        print '{} leads match budget filters'.format(len(self.budget_matches))
+        #print '{} leads match budget filters'.format(len(self.budget_matches))
         print '{} leads match email filters'.format(len(self.email_matches))
 
 
@@ -147,10 +154,24 @@ class FeedbinFilter(object):
 
         return filtered_data
 
-    def _filter(self, filters, data, to_markdown=False):
+    def filter_negative_keywords(self, data):
+        negative_filters = ['full time', 'fulltime', 'salary', '401k', 'senior',
+                            'internship']
         filtered_data = []
         for entry in data:
-            content = entry['content'].lower()
+            content = clean_html(entry['content'].lower())
+            dont_add = False
+            for filter in negative_filters:
+                if filter in content:
+                    dont_add = True
+            if not dont_add:
+                filtered_data.append(entry)
+        return filtered_data
+
+    def _filter(self, filters, data, to_markdown=False, include_neg=True):
+        filtered_data = []
+        for entry in data:
+            content = clean_html(entry['content'].lower())
             for filter in filters:
                 if filter in content and '[for hire]' not in entry['title'].lower():
                     if to_markdown:
@@ -171,11 +192,11 @@ def get_card_names(trello_cards):
 
     return names
 
-def post_to_trello(freelance, tech, email, budget):
+def post_to_trello(freelance, tech, email):
     freelance_id = '5bc91cfdcaee543fd465743d'
     tech_matches_id = '5bc91d0bf7d2b839faaf71b8'
     email_matches_id = '5bc91d160d6b977c2b22e90e'
-    budget_matches_id = '5bc91d1b4dc1245f1403812f'
+    #budget_matches_id = '5bc91d1b4dc1245f1403812f'
     board_id = '5af708fdeffb84570bfc177e'
 
     token = os.environ['TRELLO_TOKEN']
@@ -186,24 +207,19 @@ def post_to_trello(freelance, tech, email, budget):
     existing_freelance_cards = get_card_names(trello.lists.get_card(freelance_id))
     existing_tech_cards = get_card_names(trello.lists.get_card(tech_matches_id))
     existing_email_cards = get_card_names(trello.lists.get_card(email_matches_id))
-    existing_budget_cards = get_card_names(trello.lists.get_card(budget_matches_id))
+    #existing_budget_cards = get_card_names(trello.lists.get_card(budget_matches_id))
 
-    for entry in freelance:
-        if entry['title'] not in existing_freelance_cards:
-            trello.cards.new(entry['title'], freelance_id, entry['content'])
+    _post(freelance, freelance_id, trello)
+    _post(tech, tech_matches_id, trello)
+    _post(email, email_matches_id, trello)
+    #_post(budget, budget_matches_id, trello)
 
-    for entry in tech:
-        if entry['title'] not in existing_tech_cards:
-            trello.cards.new(entry['title'], tech_matches_id, entry['content'])
 
-    for entry in email:
-        if entry['title'] not in existing_email_cards:
-            trello.cards.new(entry['title'], email_matches_id, entry['content'])
-
-    for entry in budget:
-        if entry['title'] not in existing_budget_cards:
-            trello.cards.new(entry['title'], budget_matches_id, entry['content'])
-
+def _post(list_of_entries, trello_list_id, trello_obj):
+    existing_cards = get_card_names(trello_obj.lists.get_card(trello_list_id))
+    for entry in list_of_entries:
+        if entry['title'] not in existing_cards:
+            trello_obj.cards.new(entry['title'], trello_list_id, entry['content'])
 
 if __name__== "__main__":
 
@@ -224,5 +240,4 @@ if __name__== "__main__":
     feedbin.filter_entries(entries, args.days)
     post_to_trello(feedbin.freelance_matches,
                    feedbin.tech_matches,
-                   feedbin.email_matches,
-                   feedbin.budget_matches)
+                   feedbin.email_matches,)
