@@ -154,7 +154,7 @@ class FeedbinFilter(object):
         return filtered_data
 
     def filter_negative_keywords(self, data):
-        negative_filters = ['full time', 'fulltime', 'salary', '401k', 'senior',
+        negative_filters = ['full time', 'fulltime', '401k', 'senior',
                             'internship']
         filtered_data = []
         for entry in data:
@@ -162,7 +162,7 @@ class FeedbinFilter(object):
                 content = clean_html(entry['content'].lower())
                 dont_add = False
                 for filter in negative_filters:
-                    if filter in content:
+                    if filter in content or '[for hire]' in entry['title'].lower():
                         dont_add = True
                 if not dont_add:
                     filtered_data.append(entry)
@@ -173,7 +173,7 @@ class FeedbinFilter(object):
         for entry in data:
             content = clean_html(entry['content'].lower())
             for filter in filters:
-                if filter in content and '[for hire]' not in entry['title'].lower():
+                if filter in content or filter in entry['title'].lower():
                     if to_markdown:
                         entry['content'] = self.html_handler.handle(entry['content'])
                     filtered_data.append(entry)
