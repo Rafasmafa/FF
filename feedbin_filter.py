@@ -8,7 +8,6 @@ from html2text import HTML2Text
 from datetime import datetime, timedelta
 from trello import TrelloApi
 
-
 class FeedbinFilter(object):
 
     def __init__(self, username, password):
@@ -56,7 +55,7 @@ class FeedbinFilter(object):
                         'web developer', 'ruby', 'django',
                         'django', 'flask', 'drupal', 'ios',
                         'android', 'node', 'meteor', 'bitcoin',
-                        'solidity', 'web development', 'web developer',
+                        'solidity', 'web development', 'laravel'
                         'web designer', 'web design', 'website', 'react',
                         'rails', 'crypo', 'coin', 'smart contract', 'html',
                         'css', 'javascript', 'js', 'angular', 'vue']
@@ -68,10 +67,10 @@ class FeedbinFilter(object):
         print '{} new entries'.format(len(entries))
         entries = self.filter_negative_keywords(entries)
         self.freelance_matches = self._filter(freelace_filters, entries, to_markdown=True)
-        self._save_file('freelance_matches.json', self.freelance_matches)
+        #self._save_file('freelance_matches.json', self.freelance_matches)
 
         self.tech_matches = self._filter(tech_filters, self.freelance_matches)
-        self._save_file('tech_matches.json', self.tech_matches)
+        #self._save_file('tech_matches.json', self.tech_matches)
 
         self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
 
@@ -82,7 +81,7 @@ class FeedbinFilter(object):
 
         email_regex = r'[\w\.-]+@[\w\.-]+'
         self.email_matches = self._filter_regex(email_regex, self.tech_matches)
-        self._save_file('email_matches.json', self.email_matches)
+        #self._save_file('email_matches.json', self.email_matches)
 
         #self.tech_matches = self.remove_duplicates(self.tech_matches, self.budget_matches)
         self.tech_matches = self.remove_duplicates(self.tech_matches, self.email_matches)
@@ -159,13 +158,14 @@ class FeedbinFilter(object):
                             'internship']
         filtered_data = []
         for entry in data:
-            content = clean_html(entry['content'].lower())
-            dont_add = False
-            for filter in negative_filters:
-                if filter in content:
-                    dont_add = True
-            if not dont_add:
-                filtered_data.append(entry)
+            if entry['content']:
+                content = clean_html(entry['content'].lower())
+                dont_add = False
+                for filter in negative_filters:
+                    if filter in content:
+                        dont_add = True
+                if not dont_add:
+                    filtered_data.append(entry)
         return filtered_data
 
     def _filter(self, filters, data, to_markdown=False, include_neg=True):
@@ -192,6 +192,39 @@ def get_card_names(trello_cards):
 
     return names
 
+def tag_cards(trello_obj, trello_list_id):
+    label_dict = {
+        'red': ['ruby', 'rails'],
+        'green': ['python', 'django', 'flask'],
+        'yellow': ['smart contract', 'crypo', 'bitcoin', 'solidity'],
+        'orange': ['android', 'ios',],
+        'purple': ['php', 'wordpress', 'web developer', 'web development',
+                   'web designer', 'web design', 'website', 'php', 'drupal',
+                   'laravel'],
+        'blue':  ['js', 'node', 'meteor', 'react', 'javascript', 'angular', 'vue']
+        }
+
+    existing_cards = trello_obj.lists.get_card(trello_list_id)
+    for card in existing_cards:
+        for label in label_dict:
+            for i in label_dict[label]:
+                desc = card['desc'].encode('utf-8')
+                if i in desc.lower():
+                    if label not in __get_current_labels(card):
+                        trello_obj.cards.new_label(card['id'], label)
+                        new_label = label
+                        card = trello_obj.cards.get(card['id'])
+                        while new_label not in __get_current_labels(card):
+                            pass
+                            # waiting for label to update
+
+def __get_current_labels(trello_card):
+    labels = []
+    for label in trello_card['labels']:
+        labels.append(str(label['color']))
+
+    return labels
+
 def post_to_trello(freelance, tech, email):
     freelance_id = '5bc91cfdcaee543fd465743d'
     tech_matches_id = '5bc91d0bf7d2b839faaf71b8'
@@ -204,15 +237,12 @@ def post_to_trello(freelance, tech, email):
     trello = TrelloApi(key, token)
     trello.set_token(token)
 
-    existing_freelance_cards = get_card_names(trello.lists.get_card(freelance_id))
-    existing_tech_cards = get_card_names(trello.lists.get_card(tech_matches_id))
-    existing_email_cards = get_card_names(trello.lists.get_card(email_matches_id))
-    #existing_budget_cards = get_card_names(trello.lists.get_card(budget_matches_id))
-
     _post(freelance, freelance_id, trello)
     _post(tech, tech_matches_id, trello)
     _post(email, email_matches_id, trello)
     #_post(budget, budget_matches_id, trello)
+    tag_cards(trello, tech_matches_id)
+    tag_cards(trello, email_matches_id)
 
 
 def _post(list_of_entries, trello_list_id, trello_obj):
