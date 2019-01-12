@@ -1,7 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*- 
+
 from mailchimp3 import MailChimp
 from trello import TrelloApi
+from templates.premium_no_screenshot import premium_no_screenshot
+from templates.premium_w_screenshot import premium_w_screenshot
 import requests
 import argparse
+import pprint
 import os
 
 
@@ -27,7 +33,6 @@ class MailChimpCampaignCreator(object):
                           
                           }
 
-        
         def get_cards_to_send(self):
             trello_cards = []
             complete_cards = self.trello.lists.get_card('5c1674c0424cfa4164bc868b')
@@ -42,6 +47,7 @@ class MailChimpCampaignCreator(object):
                 segments = self.get_list_segments(card)
                 data_dict = {}
                 data_dict['type'] = 'regular'
+                data_dict['content_type'] = 'html'
                 data_dict["recipients"] = {'list_id': self.list_id,
                                            'segment_opts': {'match': 'any'}}
                 data_dict["recipients"]['segment_opts']['conditions'] = [{"condition_type": "Interests",
@@ -52,8 +58,21 @@ class MailChimpCampaignCreator(object):
                     "subject_line": card['name'],
                     "from_name": "FeastFlow",
                     "reply_to": 'hello@feastflow.com'}
+                screenshot_url = self.get_screenshot(card)
+                if screenshot_url:
+                    html = premium_w_screenshot
+                else:
+                    html = premium_no_screenshot
+
+                html.encode('utf-8')
+                html = html.replace("%IMAGE%", screenshot_url)
+                html = html.replace("%TITLE%", card['name'])
+                html = html.replace("%CONTENT%", self.get_card_content(card))
                 
-                self.client.campaigns.create(data_dict)
+                campaign = self.client.campaigns
+                campaign.create(data_dict)
+                campaign.content.get(campaign.campaign_id)
+                campaign.content.update(campaign.campaign_id, {'html':html})
         
         def get_list_segments(self, trello_card):
             
@@ -63,7 +82,16 @@ class MailChimpCampaignCreator(object):
                 
             return segments
         
-            
+        def get_screenshot(self, trello_card):
+            attachment = self.trello.cards.get_attachment(trello_card['id'])
+
+            try:
+                return attachment[0]["url"]
+            except KeyError:
+                return ''
+
+        def get_card_content(self, trello_card):
+            return trello_card['desc']
 
 if __name__== "__main__":
     MCCC = MailChimpCampaignCreator()
