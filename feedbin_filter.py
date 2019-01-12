@@ -49,16 +49,17 @@ class FeedbinFilter(object):
 
         freelace_filters = ['freelance', 'remote', 'contract',
                             'short term', 'long term', 'free lance'
-                            'contractor', 'gig', 'anywhere', 'project']
+                            'contractor', 'gig', 'anywhere', 'project',
+                            'free-lance', 'short-term', 'long-term']
 
         tech_filters = ['python', 'php', 'wordpress',
                         'web developer', 'ruby', 'django',
                         'django', 'flask', 'drupal', 'ios',
                         'android', 'node', 'meteor', 'bitcoin',
-                        'solidity', 'web development', 'laravel'
-                        'web designer', 'web design', 'website', 'react',
-                        'rails', 'crypo', 'coin', 'smart contract', 'html',
-                        'css', 'javascript', 'js', 'angular', 'vue']
+                        'solidity', 'web development', 'laravel',
+                        'react','rails', 'crypo', 'smart contract',
+                        'html', 'css', 'javascript', 'java script','js', 'angular',
+                        'shopify' ]
 
 
         entries = json.loads(json_obj)
@@ -67,28 +68,16 @@ class FeedbinFilter(object):
         print '{} new entries'.format(len(entries))
         entries = self.filter_negative_keywords(entries)
         self.freelance_matches = self._filter(freelace_filters, entries, to_markdown=True)
-        #self._save_file('freelance_matches.json', self.freelance_matches)
-
         self.tech_matches = self._filter(tech_filters, self.freelance_matches)
-        #self._save_file('tech_matches.json', self.tech_matches)
-
         self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
 
-        #=======================================================================
-        # self.budget_matches = self._filter_budget(5000, self.tech_matches)
-        # self._save_file('budget_matches.json', self.budget_matches)
-        #=======================================================================
 
         email_regex = r'[\w\.-]+@[\w\.-]+'
         self.email_matches = self._filter_regex(email_regex, self.tech_matches)
-        #self._save_file('email_matches.json', self.email_matches)
-
-        #self.tech_matches = self.remove_duplicates(self.tech_matches, self.budget_matches)
         self.tech_matches = self.remove_duplicates(self.tech_matches, self.email_matches)
 
         print '{} leads satisfy freelance filters'.format(len(self.freelance_matches))
         print '{} leads match tech filters'.format(len(self.tech_matches))
-        #print '{} leads match budget filters'.format(len(self.budget_matches))
         print '{} leads match email filters'.format(len(self.email_matches))
 
 
@@ -154,8 +143,8 @@ class FeedbinFilter(object):
         return filtered_data
 
     def filter_negative_keywords(self, data):
-        negative_filters = ['full time', 'fulltime', '401k', 'senior',
-                            'internship']
+        negative_filters = ['full time', 'fulltime', 'full-time', '401k' ,'401(k)',
+                            'internship', 'career', 'on site only', 'on-site only' ]
         filtered_data = []
         for entry in data:
             if entry['content']:
@@ -188,20 +177,20 @@ def clean_html(raw_html):
 def get_card_names(trello_cards):
     names = []
     for card in trello_cards:
-        names.append(card['name'])
+        names.append(card['name'].lower())
 
     return names
 
 def tag_cards(trello_obj, trello_list_id):
     label_dict = {
-        'red': ['ruby', 'rails'],
+        'red': ['ruby', 'rails', 'shopify'],
         'green': ['python', 'django', 'flask'],
         'yellow': ['smart contract', 'crypo', 'bitcoin', 'solidity'],
         'orange': ['android', 'ios',],
         'purple': ['php', 'wordpress', 'web developer', 'web development',
                    'web designer', 'web design', 'website', 'php', 'drupal',
                    'laravel'],
-        'blue':  ['js', 'node', 'meteor', 'react', 'javascript', 'angular', 'vue']
+        'blue':  ['js', 'node', 'meteor', 'react', 'javascript', 'angular', 'vue' 'java script']
         }
 
     existing_cards = trello_obj.lists.get_card(trello_list_id)
@@ -240,7 +229,6 @@ def post_to_trello(freelance, tech, email):
     _post(freelance, freelance_id, trello)
     _post(tech, tech_matches_id, trello)
     _post(email, email_matches_id, trello)
-    #_post(budget, budget_matches_id, trello)
     tag_cards(trello, tech_matches_id)
     tag_cards(trello, email_matches_id)
 
@@ -248,7 +236,7 @@ def post_to_trello(freelance, tech, email):
 def _post(list_of_entries, trello_list_id, trello_obj):
     existing_cards = get_card_names(trello_obj.lists.get_card(trello_list_id))
     for entry in list_of_entries:
-        if entry['title'] not in existing_cards:
+        if entry['title'].lower() not in existing_cards:
             trello_obj.cards.new(entry['title'], trello_list_id, entry['content'])
 
 if __name__== "__main__":
