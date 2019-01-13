@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- 
+import requests
+import argparse
+import pprint
+import os
 
 from mailchimp3 import MailChimp
 from trello import TrelloApi
 from templates.premium_no_screenshot import premium_no_screenshot
 from templates.premium_w_screenshot import premium_w_screenshot
-import requests
-import argparse
-import pprint
-import os
+from markdown2 import Markdown
+
 
 
 class MailChimpCampaignCreator(object):
@@ -23,6 +25,7 @@ class MailChimpCampaignCreator(object):
             self.client = MailChimp(mc_api=self.mailchimp_key)
             self.trello = TrelloApi(self.trello_key, self.trello_token)
             self.trello.set_token(self.trello_token)
+            self.markdown2html = Markdown()
             
             self.segments = {'ruby': 'd125b54ea5',
                              'python': '36af6f769b',
@@ -59,6 +62,7 @@ class MailChimpCampaignCreator(object):
                     "from_name": "FeastFlow",
                     "reply_to": 'hello@feastflow.com'}
                 screenshot_url = self.get_screenshot(card)
+
                 if screenshot_url:
                     html = premium_w_screenshot
                 else:
@@ -87,11 +91,11 @@ class MailChimpCampaignCreator(object):
 
             try:
                 return attachment[0]["url"]
-            except KeyError:
+            except (KeyError, IndexError):
                 return ''
 
         def get_card_content(self, trello_card):
-            return trello_card['desc']
+            return self.markdown2html.convert(trello_card['desc'])
 
 if __name__== "__main__":
     MCCC = MailChimpCampaignCreator()

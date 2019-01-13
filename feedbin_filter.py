@@ -21,7 +21,7 @@ class FeedbinFilter(object):
         self.html_handler.ignore_images = True
         self.html_handler.ignore_tables = True
         self.html_handler.ignore_emphasis = True
-        self.html_handler.ignore_links = True
+        #self.html_handler.ignore_links = True
         self.authenticate()
 
 
@@ -170,9 +170,12 @@ class FeedbinFilter(object):
         return filtered_data
 
 def clean_html(raw_html):
-    cleanr = re.compile(r'<[^>]+>')
-    cleantext = re.sub(cleanr, '', raw_html)
-    return cleantext
+    #===========================================================================
+    # cleanr = re.compile(r'<[^>]+>')
+    # cleantext = re.sub(cleanr, '', raw_html)
+    # return cleantext
+    #===========================================================================
+    return raw_html
 
 def get_card_names(trello_cards):
     names = []
