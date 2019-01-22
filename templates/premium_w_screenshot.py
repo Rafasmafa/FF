@@ -22,6 +22,7 @@ premium_w_screenshot = u"""<!doctype html>
         p{
             margin:10px 0;
             padding:0;
+            color: #000000 !important;
         }
         table{
             border-collapse:collapse;

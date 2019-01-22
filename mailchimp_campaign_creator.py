@@ -4,12 +4,17 @@ import requests
 import argparse
 import pprint
 import os
+import re
 
 from mailchimp3 import MailChimp
 from trello import TrelloApi
 from templates.premium_no_screenshot import premium_no_screenshot
 from templates.premium_w_screenshot import premium_w_screenshot
 from markdown2 import Markdown
+from selenium import webdriver
+from PIL import Image
+from resizeimage import resizeimage
+
 
 
 
@@ -38,7 +43,7 @@ class MailChimpCampaignCreator(object):
 
         def get_cards_to_send(self):
             trello_cards = []
-            complete_cards = self.trello.lists.get_card('5c1674c0424cfa4164bc868b')
+            complete_cards = self.trello.lists.get_card('5bb1e965e5336c5390e7e505')
             for card in complete_cards:
                 trello_cards.append(card)
             
@@ -92,10 +97,51 @@ class MailChimpCampaignCreator(object):
             try:
                 return attachment[0]["url"]
             except (KeyError, IndexError):
-                return ''
+                try:
+                    url_regex = r'URL: <https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)>'
+                    url = re.search(url_regex, str(trello_card['desc'])).group()
+                    url = url.strip('URL: <')
+                    url = url.strip('>')
+                    DRIVER = 'C:\Users\Nrafa\workspace\chromedriver'
+                    driver = webdriver.Chrome(DRIVER)
+                    driver.get(url)
+                    screenshot = driver.save_screenshot('lead_screenshot.png')
+                    driver.quit()
+
+                    # resize image
+                    with open('lead_screenshot.png', 'r+b') as f:
+                        with Image.open(f) as image:
+                            img = resizeimage.resize_width(image, 600)
+                            img.save('lead_screenshot.png', image.format)
+
+                    ss_path = os.path.abspath('lead_screenshot.png')
+                    self.upload_file_to_trello_card(trello_card['id'], ss_path)
+
+                    return self.trello.cards.get_attachment(trello_card['id'])[0]["url"]
+
+                except ZeroDivisionError:
+                    print 'Failed to get screenshot for {}'.format(trello_card['name'])
+                    return ''
+
 
         def get_card_content(self, trello_card):
             return self.markdown2html.convert(trello_card['desc'])
+
+        def upload_file_to_trello_card(self, card_id, file_path):
+            """
+            Upload a local file to a Trello card as an attachment.
+            File must be less than 10MB (Trello API limit).
+            :param card_id: The relevant card id
+            :param file_path: path to the file to upload
+            Returns a request Response object. It's up to you to check the
+                status code.
+            """
+            ATTACHMENTS_URL = 'https://api.trello.com/1/cards/%s/attachments'
+
+            params = {'key': self.trello_key, 'token': self.trello_token}
+            files = {'file': open(file_path, 'rb')}
+            url = ATTACHMENTS_URL % card_id
+            return requests.post(url, params=params, files=files)
 
 if __name__== "__main__":
     MCCC = MailChimpCampaignCreator()
