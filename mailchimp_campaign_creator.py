@@ -5,6 +5,7 @@ import argparse
 import pprint
 import os
 import re
+import time
 
 from mailchimp3 import MailChimp
 from trello import TrelloApi
@@ -99,12 +100,13 @@ class MailChimpCampaignCreator(object):
             except (KeyError, IndexError):
                 try:
                     url_regex = r'URL: <https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)>'
-                    url = re.search(url_regex, str(trello_card['desc'])).group()
+                    url = re.search(url_regex, str(trello_card['desc'].encode('utf-8'))).group()
                     url = url.strip('URL: <')
                     url = url.strip('>')
                     DRIVER = 'C:\Users\Nrafa\workspace\chromedriver'
                     driver = webdriver.Chrome(DRIVER)
                     driver.get(url)
+                    time.sleep(3) # wait for page to load
                     screenshot = driver.save_screenshot('lead_screenshot.png')
                     driver.quit()
 
