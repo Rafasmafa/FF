@@ -121,8 +121,8 @@ class MailChimpCampaignCreator(object):
 
                     return self.trello.cards.get_attachment(trello_card['id'])[0]["url"]
 
-                except ZeroDivisionError:
-                    print 'Failed to get screenshot for {}'.format(trello_card['name'])
+                except AttributeError:
+                    print 'Failed to get screenshot for {}'.format(trello_card['name'].encode('utf-8'))
                     return ''
 
 
