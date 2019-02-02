@@ -6,6 +6,8 @@ import pprint
 import os
 import re
 import time
+import neverbounce_sdk
+
 
 from mailchimp3 import MailChimp
 from trello import TrelloApi
@@ -28,11 +30,12 @@ class MailChimpCampaignCreator(object):
             self.trello_token = os.environ['TRELLO_TOKEN']
             self.trello_key = os.environ['TRELLO_API_KEY']
             self.mailchimp_key = os.environ['MAILCHIMP_API_KEY']
+            self.never_bouce_apy_key = os.environ['NB_APY_KEY']
             self.client = MailChimp(mc_api=self.mailchimp_key)
             self.trello = TrelloApi(self.trello_key, self.trello_token)
             self.trello.set_token(self.trello_token)
             self.markdown2html = Markdown()
-            
+
             self.segments = {'ruby': 'd125b54ea5',
                              'python': '36af6f769b',
                              'javascript': 'c63ef1fad6',
@@ -47,51 +50,54 @@ class MailChimpCampaignCreator(object):
             complete_cards = self.trello.lists.get_card('5bb1e965e5336c5390e7e505')
             for card in complete_cards:
                 trello_cards.append(card)
-            
+
             return trello_cards
-        
+
         def create_campaigns(self, trello_cards):
             list_id = '3097db167f'
             for card in trello_cards:
-                segments = self.get_list_segments(card)
-                data_dict = {}
-                data_dict['type'] = 'regular'
-                data_dict['content_type'] = 'html'
-                data_dict["recipients"] = {'list_id': self.list_id,
-                                           'segment_opts': {'match': 'any'}}
-                data_dict["recipients"]['segment_opts']['conditions'] = [{"condition_type": "Interests",
-                                                                         'op': 'interestcontains',
-                                                                        'field': self.segement_field_id,
-                                                                        'value': segments}]
-                data_dict['settings'] = {
-                    "subject_line": card['name'],
-                    "from_name": "FeastFlow",
-                    "reply_to": 'hello@feastflow.com'}
-                screenshot_url = self.get_screenshot(card)
+                if self.validate_links(card) and self.validate_email(card):
+                    segments = self.get_list_segments(card)
+                    data_dict = {}
+                    data_dict['type'] = 'regular'
+                    data_dict['content_type'] = 'html'
+                    data_dict["recipients"] = {'list_id': self.list_id,
+                                               'segment_opts': {'match': 'any'}}
+                    data_dict["recipients"]['segment_opts']['conditions'] = [{"condition_type": "Interests",
+                                                                             'op': 'interestcontains',
+                                                                            'field': self.segement_field_id,
+                                                                            'value': segments}]
+                    data_dict['settings'] = {
+                        "subject_line": card['name'],
+                        "from_name": "FeastFlow",
+                        "reply_to": 'hello@feastflow.com'}
+                    screenshot_url = self.get_screenshot(card)
 
-                if screenshot_url:
-                    html = premium_w_screenshot
+                    if screenshot_url:
+                        html = premium_w_screenshot
+                    else:
+                        html = premium_no_screenshot
+
+                    html.encode('utf-8')
+                    html = html.replace("%IMAGE%", screenshot_url)
+                    html = html.replace("%TITLE%", card['name'])
+                    html = html.replace("%CONTENT%", self.get_card_content(card))
+
+                    campaign = self.client.campaigns
+                    campaign.create(data_dict)
+                    campaign.content.get(campaign.campaign_id)
+                    campaign.content.update(campaign.campaign_id, {'html':html})
                 else:
-                    html = premium_no_screenshot
+                    continue
 
-                html.encode('utf-8')
-                html = html.replace("%IMAGE%", screenshot_url)
-                html = html.replace("%TITLE%", card['name'])
-                html = html.replace("%CONTENT%", self.get_card_content(card))
-                
-                campaign = self.client.campaigns
-                campaign.create(data_dict)
-                campaign.content.get(campaign.campaign_id)
-                campaign.content.update(campaign.campaign_id, {'html':html})
-        
         def get_list_segments(self, trello_card):
-            
+
             segments = [] 
             for label in trello_card['labels']:
                 segments.append(self.segments[label['name'].lower()])
-                
+
             return segments
-        
+
         def get_screenshot(self, trello_card):
             attachment = self.trello.cards.get_attachment(trello_card['id'])
 
@@ -144,6 +150,34 @@ class MailChimpCampaignCreator(object):
             files = {'file': open(file_path, 'rb')}
             url = ATTACHMENTS_URL % card_id
             return requests.post(url, params=params, files=files)
+
+        def validate_links(self, trello_card):
+            url_regex = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)'
+            links = re.findall(url_regex, str(trello_card['desc'].encode('utf-8')))
+
+            for link in links:
+                request = requests.get('http://www.example.com')
+                if request.status_code == 200:
+                     continue
+                else:
+                    # move card to broken link column
+                    self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    return False
+            return True
+
+        def validate_email(self, trello_card):
+            client = neverbounce_sdk.client(api_key=self.never_bouce_apy_key)
+            email_regex = r'[\w\.-]+@[\w\.-]+'
+            emails = re.findall(email_regex, str(trello_card['desc'].encode('utf-8')))
+            for address in emails:
+                resp = client.single_check(address)
+                if resp['result'] == 'valid':
+                    continue
+                else:
+                    # move card to broken link column
+                    self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    return False
+            return True
 
 if __name__== "__main__":
     MCCC = MailChimpCampaignCreator()
