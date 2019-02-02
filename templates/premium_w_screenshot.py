@@ -545,7 +545,7 @@ premium_w_screenshot = u"""<!doctype html>
                         
                         <td valign="top" class="mcnTextContent" style="padding-top:0; padding-right:18px; padding-bottom:9px; padding-left:18px;">
                         
-                            <p><font color="#000000"><span style="font-size:22px"><strong>%TITLE%</strong></span></font></p>
+                            <p style="text-align: center";><font color="#000000"><span style="font-size:22px";><strong>%TITLE%</strong></span></font></p>
 
 <p><font color="#000000"><span style="font-size:18px">%CONTENT%</span></font></p>
 
