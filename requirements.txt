@@ -18,14 +18,11 @@ idna==2.5
 incremental==17.5.0
 ipaddress==1.0.18
 itsdangerous==0.24
-Jinja2==2.10
 lxml==3.8.0
 mailchimp3==3.0.6
 markdown2==2.3.7
 MarkupSafe==1.0
-matplotlib==2.1.0
-numpy==1.13.3
-pandas==0.21.0
+neverbounce-sdk==4.2.6
 parsel==1.2.0
 Pillow==5.4.1
 pyasn1==0.2.3
@@ -40,7 +37,6 @@ python-resize-image==1.1.18
 pytz==2017.3
 queuelib==1.4.2
 requests==2.19.1
-Scrapy==1.4.0
 selenium==3.141.0
 service-identity==17.0.0
 six==1.10.0
