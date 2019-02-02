@@ -109,7 +109,7 @@ class MailChimpCampaignCreator(object):
                     url = re.search(url_regex, str(trello_card['desc'].encode('utf-8'))).group()
                     url = url.strip('URL: <')
                     url = url.strip('>')
-                    DRIVER = 'C:\Users\Nrafa\workspace\chromedriver'
+                    DRIVER = os.path.join(os.getcwd(), 'drivers', 'chromedriver')
                     driver = webdriver.Chrome(DRIVER)
                     driver.get(url)
                     time.sleep(3) # wait for page to load
