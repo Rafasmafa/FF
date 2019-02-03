@@ -4,6 +4,8 @@ import sys
 import json
 import os
 import re
+from difflib import SequenceMatcher
+
 from html2text import HTML2Text
 from datetime import datetime, timedelta
 from trello import TrelloApi
@@ -157,6 +159,17 @@ class FeedbinFilter(object):
                     filtered_data.append(entry)
         return filtered_data
 
+    def is_duplicate(self, entries, entry_to_compare):
+        for entry in entries:
+            m = SequenceMatcher(None, entry_to_compare['content'], entry['content'])
+            ratio = m.ratio()
+
+            if ratio < .75:
+                continue
+            else:
+                return True
+        return False
+
     def _filter(self, filters, data, to_markdown=False, include_neg=True):
         filtered_data = []
         for entry in data:
@@ -165,7 +178,8 @@ class FeedbinFilter(object):
                 if filter in content or filter in entry['title'].lower():
                     if to_markdown:
                         entry['content'] = self.html_handler.handle(entry['content'])
-                    filtered_data.append(entry)
+                    if not self.is_duplicate(filtered_data, entry):
+                        filtered_data.append(entry)
                     break
         return filtered_data
 
@@ -240,6 +254,7 @@ def _post(list_of_entries, trello_list_id, trello_obj):
     existing_cards = get_card_names(trello_obj.lists.get_card(trello_list_id))
     for entry in list_of_entries:
         if entry['title'].lower() not in existing_cards:
+            entry['content'] += "\n Source: <" + entry["url"] + ">"
             trello_obj.cards.new(entry['title'], trello_list_id, entry['content'])
 
 if __name__== "__main__":
