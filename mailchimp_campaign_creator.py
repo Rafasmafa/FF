@@ -153,10 +153,9 @@ class MailChimpCampaignCreator(object):
 
         def validate_links(self, trello_card):
             url_regex = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)'
-            links = re.findall(url_regex, str(trello_card['desc'].encode('utf-8')))
-
+            links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
-                request = requests.get('http://www.example.com')
+                request = requests.get(link.group(0))
                 if request.status_code == 200:
                      continue
                 else:
