@@ -161,6 +161,7 @@ class MailChimpCampaignCreator(object):
                 else:
                     # move card to broken link column
                     self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    print "Broken Link in {}: {}".format( trello_card['name'].encode('utf-8'),link)
                     return False
             return True
 
@@ -170,11 +171,13 @@ class MailChimpCampaignCreator(object):
             emails = re.findall(email_regex, str(trello_card['desc'].encode('utf-8')))
             for address in emails:
                 resp = client.single_check(address)
-                if resp['result'] == 'valid':
+
+                if resp['result'] in ['valid', 'catchall']:
                     continue
                 else:
                     # move card to broken link column
                     self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    print "Email Bounced in {}: {}".format(trello_card['name'].encode("utf-8"), address)
                     return False
             return True
 
