@@ -12,9 +12,9 @@ from trello import TrelloApi
 
 class FeedbinFilter(object):
 
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
+    def __init__(self):
+        self.username = os.environ['FEEDBIN_USER']
+        self.password = os.environ['FEEDBIN_PASSWORD']
         self.freelance_matches = []
         self.tech_matches = []
         self.budget_matches = []
@@ -266,12 +266,12 @@ if __name__== "__main__":
     parser.add_argument('--password', '-p', dest='password' , default=None,
                         type=str, action='store',
                         help="Email account password")
-    parser.add_argument('--days', '-d', dest='days' , default=14,
+    parser.add_argument('--days', '-d', dest='days' , default=1,
                     type=int, action='store',
                     help="Number of days to look for entries")
     args = parser.parse_args()
 
-    feedbin = FeedbinFilter(args.username, args.password)
+    feedbin = FeedbinFilter()
     entries = feedbin.get_entries()
     feedbin.filter_entries(entries, args.days)
     post_to_trello(feedbin.freelance_matches,
