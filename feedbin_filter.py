@@ -85,7 +85,7 @@ class FeedbinFilter(object):
 
     def filter_based_on_date(self, entries, days_ago):
         filtered = []
-        days_dt = (datetime - timedelta(days=days_ago)).isoformat()
+        days_dt = (datetime.now() - timedelta(days=days_ago)).isoformat()
         print 'Getting entries from {} days ago until now'.format(days_ago)
         for entry in entries:
             if entry['published'] > days_dt:
