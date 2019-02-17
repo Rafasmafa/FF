@@ -38,11 +38,13 @@ class MailChimpCampaignCreator(object):
 
             self.segments = {'ruby': 'd125b54ea5',
                              'python': '36af6f769b',
-                             'javascript': 'c63ef1fad6',
+                             'javascript (backend/node/meteor)': 'c63ef1fad6',
                              'php':'dd47521189',
                              'mobile': 'ccae9429e5',
-                             'crypto': '547568b68e'
-                          
+                             'javascript (frontend/angular/react/vue)': 'e46d8964c6',
+                             'interaction design (web design/mobile design/ui/ux)': '6958995281',
+                             'graphic design (branding/logos/animations/illustrations)': '6f583d899e'
+
                           }
 
         def get_cards_to_send(self):
@@ -156,12 +158,12 @@ class MailChimpCampaignCreator(object):
             links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
                 request = requests.get(link.group(0))
-                if request.status_code == 200:
+                if request.status_code in [200, 403]:
                      continue
                 else:
                     # move card to broken link column
                     self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
-                    print "Broken Link in {}: {}".format( trello_card['name'].encode('utf-8'),link)
+                    print "Broken Link in {}: {}".format( trello_card['name'].encode('utf-8'), link.group(0))
                     return False
             return True
 

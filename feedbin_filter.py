@@ -49,6 +49,9 @@ class FeedbinFilter(object):
 
     def filter_entries(self, json_obj, days_ago):
 
+        # Case doesnt matter for filters, they all get
+        # moved to lower case when time to compare
+
         freelace_filters = ['freelance', 'remote', 'contract',
                             'short term', 'long term', 'free lance'
                             'contractor', 'gig', 'anywhere', 'project',
@@ -57,11 +60,16 @@ class FeedbinFilter(object):
         tech_filters = ['python', 'php', 'wordpress',
                         'web developer', 'ruby', 'django',
                         'django', 'flask', 'drupal', 'ios',
-                        'android', 'node', 'meteor', 'bitcoin',
-                        'solidity', 'web development', 'laravel',
-                        'react','rails', 'crypo', 'smart contract',
-                        'html', 'css', 'javascript', 'java script','js', 'angular',
-                        'shopify' ]
+                        'android', 'node', 'meteor', 'vue.js'
+                        'web development', 'laravel',
+                        'react','rails','html', 'css',
+                        'javascript', 'java script','js', 'angular',
+                        'shopify', 'product design', 'packaging design',
+                        'package design', 'UX/UI', 'User Interface',
+                        'UX Designer', 'UI Designer', 'Product Design',
+                        'Branding', 'Animation', 'Logo Design', 'Illustration',
+                        'Mobile Design', 'web design', 'website design',
+                        'visual design', 'Graphic Design']
 
 
         entries = json.loads(json_obj)
@@ -202,20 +210,25 @@ def tag_cards(trello_obj, trello_list_id):
     label_dict = {
         'red': ['ruby', 'rails', 'shopify'],
         'green': ['python', 'django', 'flask'],
-        'yellow': ['smart contract', 'crypo', 'bitcoin', 'solidity'],
-        'orange': ['android', 'ios',],
+        'yellow': ['angular', 'vue', 'react', 'front-end', 'front end'],
+        'orange': ['android', 'ios', 'react native'],
         'purple': ['php', 'wordpress', 'web developer', 'web development',
-                   'web designer', 'web design', 'website', 'php', 'drupal',
-                   'laravel'],
-        'blue':  ['js', 'node', 'meteor', 'react', 'javascript', 'angular', 'vue' 'java script']
+                   'web design', 'website', 'php', 'drupal', 'laravel'],
+        'blue':  ['js', 'node', 'meteor', 'javascript', 'java script'],
+        'lime': ['web design', 'mobile design', 'UX/UI', 'User Interface',
+                 'UX Designer', 'UI Designer', 'UX expert','UI expert'],
+        'pink': ['graphic design', 'logo', 'illustration', 'animation',
+                 'branding', 'Product Design', 'product design',
+                 'packaging design', 'illustrate']
         }
 
     existing_cards = trello_obj.lists.get_card(trello_list_id)
     for card in existing_cards:
         for label in label_dict:
             for i in label_dict[label]:
-                desc = card['desc'].encode('utf-8')
-                if i in desc.lower():
+                desc = card['desc'].encode('utf-8').lower()
+                name = card['name'].encode('utf-8').lower()
+                if i in desc or i in name :
                     if label not in __get_current_labels(card):
                         trello_obj.cards.new_label(card['id'], label)
                         new_label = label
@@ -260,12 +273,6 @@ def _post(list_of_entries, trello_list_id, trello_obj):
 if __name__== "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--username', '-u', dest='username' , default=None,
-                        type=str, action='store',
-                        help="Email account username")
-    parser.add_argument('--password', '-p', dest='password' , default=None,
-                        type=str, action='store',
-                        help="Email account password")
     parser.add_argument('--days', '-d', dest='days' , default=1,
                     type=int, action='store',
                     help="Number of days to look for entries")

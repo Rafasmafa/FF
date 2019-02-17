@@ -1,1 +1,1 @@
-worker: python feedbin_filter.py
+worker: python feedbin_filter.py --help
