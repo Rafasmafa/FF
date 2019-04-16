@@ -126,6 +126,7 @@ class MailChimpCampaignCreator(object):
 
                     ss_path = os.path.abspath('lead_screenshot.png')
                     self.upload_file_to_trello_card(trello_card['id'], ss_path)
+                    os.remove(ss_path)
 
                     return self.trello.cards.get_attachment(trello_card['id'])[0]["url"]
 
@@ -158,12 +159,14 @@ class MailChimpCampaignCreator(object):
             links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
                 request = requests.get(link.group(0))
-                if request.status_code in [200, 403]:
+                if request.status_code in [200, 403, 999]:
                      continue
                 else:
                     # move card to broken link column
                     self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
-                    print "Broken Link in {}: {}".format( trello_card['name'].encode('utf-8'), link.group(0))
+                    print "Broken Link in {} with status code {}: {}".format(trello_card['name'].encode('utf-8'),
+                                                                             request.status_code,
+                                                                             link.group(0))
                     return False
             return True
 
