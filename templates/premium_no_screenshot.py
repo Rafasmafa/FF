@@ -582,7 +582,7 @@ premium_no_screenshot = u"""<!doctype html>
                         
                         <td valign="top" class="mcnTextContent" style="padding-top:0; padding-right:18px; padding-bottom:9px; padding-left:18px;">
                         
-                            <div style="text-align: center;"><a href="https://www.feastflow.com/dashboard" target="_blank"><span style="font-size:18px"><strong>Log in to your dashboard to change your project alert settings</strong></span></a></div>
+                            <div style="text-align: center;"><a href="https://www.feastflow.com/dashboard" target="_blank"><span style="font-size:18px"><strong>Log in to your dashboard to change your project alert settings</strong></span></a> <a id="archive-link" href="*|ARCHIVE|*">View this email in your browser</a></div>
 
                         </td>
                     </tr>
