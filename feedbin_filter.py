@@ -4,12 +4,13 @@ import sys
 import json
 import os
 import re
+import sqlite3
 from difflib import SequenceMatcher
 
 from html2text import HTML2Text
 from datetime import datetime, timedelta
 from trello import TrelloApi
-#from page_parser import get_lws_leads
+#from database import database_api
 
 class FeedbinFilter(object):
 
@@ -27,7 +28,8 @@ class FeedbinFilter(object):
         self.html_handler.ignore_emphasis = True
         #self.html_handler.ignore_links = True
         self.authenticate()
-        self.reddit_json = os.path.join('reddit/freelancer_list.json')
+        self.contacted_leads = os.path.join('reddit/freelancer_list.json')
+        self.reddit_json = os.path.join('reddit/reddit_leads.json')
         self.tech_filters = ['python', 'php', 'wordpress',
                             'web developer', 'ruby', 'django',
                             'django', 'flask', 'drupal', 'ios',
@@ -39,6 +41,22 @@ class FeedbinFilter(object):
                             'package design', 'UX/UI', 'User Interface',
                             'UX Designer', 'UI Designer', 'Product Design',
                             'Branding', 'Animation', 'Logo Design', 'Illustration',
+                            'Mobile Design', 'web design', 'website design',
+                            'visual design', 'Graphic Design', 'developer',
+                            'packaging', 'software engineer']
+
+        self.reddit_filters = ['python', 'php', 'wordpress develop',
+                            'web develop', 'ruby', 'django',
+                            'django', 'flask', 'drupal', 'ios',
+                            'android', 'node js', 'meteor js', 'vue js',
+                             'node.js', 'meteor.js', 'vue.js'
+                            'web development', 'laravel',
+                            'react.js', 'react js','ruby on rails','html', 'css',
+                            'javascript', 'java script','angular',
+                            'shopify', 'product design', 'packaging design',
+                            'package design', 'UX/UI', 'User Interface',
+                            'UX Design', 'UI Design', 'Product Design',
+                            'Branding', 'Logo Design', 'Illustration',
                             'Mobile Design', 'web design', 'website design',
                             'visual design', 'Graphic Design']
 
@@ -67,34 +85,34 @@ class FeedbinFilter(object):
         return re.findall(r'/u/.+', entry['author'])[0].strip('/u/')
 
     def get_known_reddit_usernames(self):
-        with open(self.reddit_json, 'r') as fn:
-            data = json.load(fn)
+        '''Gets leads that were on the old trello board'''
 
-        with open('reddit/reddit_leads.json') as fn2:
-            data.extend(json.load(fn2))
+        with open(self.contacted_leads, 'r') as fn:
+            data = json.load(fn)
 
         return data
 
     def update_reddit_username(self, usernames):
-        with open(self.reddit_json, 'r') as fn:
-            data = json.load(fn)
-
-        for name in usernames:
-            data.append(name)
-
-        with open(self.reddit_json, 'w') as fn:
-            json.dump(data, fn)
+        conn = sqlite3.connect('reddit_leads.db')
+        count = 0
+        known_count = 0
+        for username in usernames:
+            if database_api.create_lead_record(conn, username):
+                count += 1
+            else:
+                known_count += 1
+        print "{} new users added to leads db".format(count)
+        print "found {} users already in db".format(known_count)
 
     def get_reddit_leads(self, json_obj):
         entries = json.loads(json_obj)
         known_usernames = self.get_known_reddit_usernames()
-        print len(known_usernames)
         new_names = []
         count = 0
         known_count = 0
         for entry in entries:
             if '[for hire]' in entry['title'].lower():
-                for keyword in self.tech_filters:
+                for keyword in self.reddit_filters:
                     if keyword.lower() in entry['content'].lower().encode('utf-8'):
                         username = self.get_reddit_username(entry)
                         if username not in known_usernames and username not in new_names:
@@ -105,7 +123,6 @@ class FeedbinFilter(object):
                             known_count += 1
 
         self.update_reddit_username(new_names)
-        print 'Added {} usernames to lead file'.format(count)
 
     def filter_entries(self, json_obj, days_ago, extra=None):
 
@@ -213,7 +230,7 @@ class FeedbinFilter(object):
 
     def filter_negative_keywords(self, data):
         negative_filters = ['full time', 'fulltime', 'full-time', '401k' ,'401(k)',
-                            'internship', 'career', 'on site only', 'on-site only' ]
+                            'intern', 'career', 'on site only', 'on-site only', 'writer']
         filtered_data = []
         for entry in data:
             if entry['content']:

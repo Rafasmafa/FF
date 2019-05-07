@@ -582,7 +582,7 @@ premium_no_screenshot = u"""<!doctype html>
                         
                         <td valign="top" class="mcnTextContent" style="padding-top:0; padding-right:18px; padding-bottom:9px; padding-left:18px;">
                         
-                            <div style="text-align: center;"><a href="https://www.feastflow.com/dashboard" target="_blank"><span style="font-size:18px"><strong>Log in to your dashboard to change your project alert settings</strong></span></a> <a id="archive-link" href="*|ARCHIVE|*">View this email in your browser</a></div>
+                            <div style="text-align: center;"><a href="https://www.feastflow.com/dashboard" target="_blank"><span style="font-size:18px"><strong>Log in to your dashboard to change your project alert settings</strong></span></a></div>
 
                         </td>
                     </tr>
@@ -791,6 +791,7 @@ premium_no_screenshot = u"""<!doctype html>
 <br>
 Want to change how you receive these emails?<br>
 You can <a href="*|UPDATE_PROFILE|*">update your preferences</a> or <a href="*|UNSUB|*">unsubscribe from this list</a>.<br>
+<a id="archive-link" href="*|ARCHIVE|*">View this email in your browser</a>
 <br>
 *|IF:REWARDS|* *|HTML:REWARDS|* *|END:IF|*
                         </td>
