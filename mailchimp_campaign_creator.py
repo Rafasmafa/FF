@@ -6,6 +6,7 @@ import pprint
 import os
 import re
 import time
+import sys
 import neverbounce_sdk
 
 
@@ -179,6 +180,19 @@ class MailChimpCampaignCreator(object):
 
                 if resp['result'] in ['valid', 'catchall']:
                     continue
+                elif resp['result'] == 'unknown':
+                    print ("Status of email address for {} is unknown, do you still "
+                           "want to send it?[Y/N]".format(trello_card['name'].encode("utf-8")))
+                    sys.stdout.flush()
+                    answer = raw_input()
+                    if answer.lower == 'y':
+                        continue
+                    elif answer.lower == 'n':
+                        return False
+                    else:
+                        print 'invalid input'
+                        print 'skipping card'
+
                 else:
                     # move card to broken link column
                     self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")

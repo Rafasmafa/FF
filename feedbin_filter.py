@@ -29,7 +29,7 @@ class FeedbinFilter(object):
         #self.html_handler.ignore_links = True
         self.authenticate()
         self.contacted_leads = os.path.join('reddit/freelancer_list.json')
-        self.reddit_json = os.path.join('reddit/reddit_leads.json')
+        self.reddit_json = os.path.join('reddit/reddit_leads_tagged.json')
         self.tech_filters = ['python', 'php', 'wordpress',
                             'web developer', 'ruby', 'django',
                             'django', 'flask', 'drupal', 'ios',
@@ -60,6 +60,32 @@ class FeedbinFilter(object):
                             'Mobile Design', 'web design', 'website design',
                             'visual design', 'Graphic Design']
 
+        self.label_dict = {
+            'red': ['ruby', 'rails', 'shopify'],
+            'green': ['python', 'django', 'flask'],
+            'yellow': ['angular', 'vue', 'react', 'front-end', 'front end'],
+            'orange': ['android', 'ios', 'react native'],
+            'purple': ['php', 'wordpress', 'web developer', 'web development',
+                       'web design', 'website', 'php', 'drupal', 'laravel'],
+            'blue':  ['js', 'node', 'meteor', 'javascript', 'java script'],
+            'lime': ['web design', 'mobile design', 'UX/UI', 'User Interface',
+                     'UX Designer', 'UI Designer', 'UX expert','UI expert'],
+            'pink': ['graphic design', 'logo', 'illustration', 'animation',
+                     'branding', 'Product Design', 'product design',
+                     'packaging design', 'illustrate']
+            }
+
+        self.label_decoder = {
+            'red': 'ruby',
+            'green': 'python',
+            'yellow': 'frontend js',
+            'orange': 'mobile',
+            'purple': 'php',
+            'blue':  'backend js',
+            'lime': 'ux',
+            'pink': 'graphic design'
+            }
+
 
     def authenticate(self):
         response = requests.get(
@@ -76,7 +102,7 @@ class FeedbinFilter(object):
 
     def get_entries(self):
         response = requests.get(
-            'https://api.feedbin.com/v2/entries.json?per_page=1500',
+            'https://api.feedbin.com/v2/entries.json?per_page=5000',
             auth=(self.username, self.password))
 
         return response.text
@@ -92,22 +118,38 @@ class FeedbinFilter(object):
 
         return data
 
-    def update_reddit_username(self, usernames):
+    def update_reddit_username(self, user_dict):
         conn = sqlite3.connect('reddit_leads.db')
         count = 0
         known_count = 0
-        for username in usernames:
-            if database_api.create_lead_record(conn, username):
+        for username, tags in user_dict.iteritems():
+            if database_api.create_lead_record(conn, username, tags):
                 count += 1
             else:
                 known_count += 1
         print "{} new users added to leads db".format(count)
         print "found {} users already in db".format(known_count)
+        conn.close()
+
+    def tag_reddit_leads(self, entry):
+        current_labels = []
+        new_labels = []
+        for label in self.label_dict:
+            for i in self.label_dict[label]:
+                desc = entry['content'].encode('utf-8').lower()
+                name = entry['title'].encode('utf-8').lower()
+                if i in desc or i in name :
+                    if label not in current_labels:
+                        current_labels.append(label)
+        for label in current_labels:
+            new_labels.append(self.label_decoder[label])
+
+        return new_labels
 
     def get_reddit_leads(self, json_obj):
         entries = json.loads(json_obj)
         known_usernames = self.get_known_reddit_usernames()
-        new_names = []
+        new_names = {}
         count = 0
         known_count = 0
         for entry in entries:
@@ -116,7 +158,7 @@ class FeedbinFilter(object):
                     if keyword.lower() in entry['content'].lower().encode('utf-8'):
                         username = self.get_reddit_username(entry)
                         if username not in known_usernames and username not in new_names:
-                            new_names.append(username)
+                            new_names[username] = self.tag_reddit_leads(entry)
                             count += 1
                             break
                         else:
@@ -283,25 +325,11 @@ def get_card_names(trello_cards):
     return names
 
 def tag_cards(trello_obj, trello_list_id):
-    label_dict = {
-        'red': ['ruby', 'rails', 'shopify'],
-        'green': ['python', 'django', 'flask'],
-        'yellow': ['angular', 'vue', 'react', 'front-end', 'front end'],
-        'orange': ['android', 'ios', 'react native'],
-        'purple': ['php', 'wordpress', 'web developer', 'web development',
-                   'web design', 'website', 'php', 'drupal', 'laravel'],
-        'blue':  ['js', 'node', 'meteor', 'javascript', 'java script'],
-        'lime': ['web design', 'mobile design', 'UX/UI', 'User Interface',
-                 'UX Designer', 'UI Designer', 'UX expert','UI expert'],
-        'pink': ['graphic design', 'logo', 'illustration', 'animation',
-                 'branding', 'Product Design', 'product design',
-                 'packaging design', 'illustrate']
-        }
 
     existing_cards = trello_obj.lists.get_card(trello_list_id)
     for card in existing_cards:
-        for label in label_dict:
-            for i in label_dict[label]:
+        for label in self.label_dict:
+            for i in self.label_dict[label]:
                 desc = card['desc'].encode('utf-8').lower()
                 name = card['name'].encode('utf-8').lower()
                 if i in desc or i in name :
