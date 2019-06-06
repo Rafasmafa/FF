@@ -30,6 +30,9 @@ class FeedbinFilter(object):
         self.authenticate()
         self.contacted_leads = os.path.join('reddit/freelancer_list.json')
         self.reddit_json = os.path.join('reddit/reddit_leads_tagged.json')
+
+        # Case doesnt matter for filters, they all get
+        # moved to lower case when time to compare
         self.tech_filters = ['python', 'php', 'wordpress',
                             'web developer', 'ruby', 'django',
                             'django', 'flask', 'drupal', 'ios',
@@ -44,6 +47,14 @@ class FeedbinFilter(object):
                             'Mobile Design', 'web design', 'website design',
                             'visual design', 'Graphic Design', 'developer',
                             'packaging', 'software engineer']
+
+        self.freelance_filters = ['freelance', 'remote', 'contract',
+                                'short term', 'long term', 'free lance'
+                                'contractor', 'gig', 'anywhere', 'project',
+                                'free-lance', 'short-term', 'long-term', 'rfp']
+
+        self.negative_filters = ['full time', 'fulltime', 'full-time', '401k' ,'401(k)',
+                                 'intern', 'career', 'on site only', 'on-site only', 'writer']
 
         self.reddit_filters = ['python', 'php', 'wordpress develop',
                             'web develop', 'ruby', 'django',
@@ -166,17 +177,14 @@ class FeedbinFilter(object):
 
         self.update_reddit_username(new_names)
 
+    def get_colony_leads(self, json_obj, days_ago):
+        # define our own filters to find writing gigs
+        self.tech_filters = []
+        self.freelance_filters = ['writer']
+        self.negative_filters = ['[for hire]']
+        self.filter_entries(json_obj, days_ago)
+
     def filter_entries(self, json_obj, days_ago, extra=None):
-
-        # Case doesnt matter for filters, they all get
-        # moved to lower case when time to compare
-
-        freelace_filters = ['freelance', 'remote', 'contract',
-                            'short term', 'long term', 'free lance'
-                            'contractor', 'gig', 'anywhere', 'project',
-                            'free-lance', 'short-term', 'long-term', 'rfp']
-
-
 
         entries = json.loads(json_obj)
         entries = self.filter_based_on_date(entries, days_ago)
@@ -185,7 +193,8 @@ class FeedbinFilter(object):
         entries = self.filter_negative_keywords(entries)
         #if extra:
             #entries.extend(extra)
-        self.freelance_matches = self._filter(freelace_filters, entries, to_markdown=True)
+
+        self.freelance_matches = self._filter(self.freelance_filters, entries, to_markdown=True)
         self.tech_matches_not_confirmed = self._filter(self.tech_filters, entries, to_markdown=True)
         self.tech_matches = self._filter(self.tech_filters, self.freelance_matches)
         self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
@@ -271,14 +280,12 @@ class FeedbinFilter(object):
         return filtered_data
 
     def filter_negative_keywords(self, data):
-        negative_filters = ['full time', 'fulltime', 'full-time', '401k' ,'401(k)',
-                            'intern', 'career', 'on site only', 'on-site only', 'writer']
         filtered_data = []
         for entry in data:
             if entry['content']:
                 content = clean_html(entry['content'].lower())
                 dont_add = False
-                for filter in negative_filters:
+                for filter in self.negative_filters:
                     if filter in content or '[for hire]' in entry['title'].lower():
                         dont_add = True
                 if not dont_add:
@@ -325,11 +332,24 @@ def get_card_names(trello_cards):
     return names
 
 def tag_cards(trello_obj, trello_list_id):
-
+    label_dict = {
+            'red': ['ruby', 'rails', 'shopify'],
+            'green': ['python', 'django', 'flask'],
+            'yellow': ['angular', 'vue', 'react', 'front-end', 'front end'],
+            'orange': ['android', 'ios', 'react native'],
+            'purple': ['php', 'wordpress', 'web developer', 'web development',
+                       'web design', 'website', 'php', 'drupal', 'laravel'],
+            'blue':  ['js', 'node', 'meteor', 'javascript', 'java script'],
+            'lime': ['web design', 'mobile design', 'UX/UI', 'User Interface',
+                     'UX Designer', 'UI Designer', 'UX expert','UI expert'],
+            'pink': ['graphic design', 'logo', 'illustration', 'animation',
+                     'branding', 'Product Design', 'product design',
+                     'packaging design', 'illustrate']
+            }
     existing_cards = trello_obj.lists.get_card(trello_list_id)
     for card in existing_cards:
-        for label in self.label_dict:
-            for i in self.label_dict[label]:
+        for label in label_dict:
+            for i in label_dict[label]:
                 desc = card['desc'].encode('utf-8').lower()
                 name = card['name'].encode('utf-8').lower()
                 if i in desc or i in name :
@@ -348,13 +368,20 @@ def __get_current_labels(trello_card):
 
     return labels
 
+def post_to_colony_trello(leads):
+    lead_id = '5cf85281ceafe811d744c6d6'
+    token = os.environ['TRELLO_TOKEN']
+    key = os.environ['TRELLO_API_KEY']
+    trello = TrelloApi(key, token)
+    trello.set_token(token)
+    _post(leads, lead_id, trello)
+
 def post_to_trello(freelance, tech, tech_not_confirmed, email):
     freelance_id = '5bc91cfdcaee543fd465743d'
     tech_matches_id = '5bc91d0bf7d2b839faaf71b8'
     email_matches_id = '5bc91d160d6b977c2b22e90e'
     tech_matches_not_confirmed_id = '5cb1ec921fa7ff624beebc4b'
     #budget_matches_id = '5bc91d1b4dc1245f1403812f'
-    board_id = '5af708fdeffb84570bfc177e'
 
     token = os.environ['TRELLO_TOKEN']
     key = os.environ['TRELLO_API_KEY']
@@ -384,6 +411,7 @@ if __name__== "__main__":
                     type=int, action='store',
                     help="Number of days to look for entries")
     parser.add_argument('--get_lws', action='store_true', default=False)
+    parser.add_argument('--generate_colony_content_leads', '-gccl', action='store_true', default=False)
     parser.add_argument('--generate_reddit_leads', '-grl', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -391,6 +419,11 @@ if __name__== "__main__":
     entries = feedbin.get_entries()
     if args.generate_reddit_leads:
         feedbin.get_reddit_leads(entries)
+        sys.exit()
+
+    if args.generate_colony_content_leads:
+        feedbin.get_colony_leads(entries, args.days)
+        post_to_colony_trello(feedbin.freelance_matches)
         sys.exit()
 
     #if args.get_lws:
