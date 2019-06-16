@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% include "navbar.html" %}
+	<meta charset="utf-8">
+	<title>This is a test</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script>
+       $(document).ready(function(){
+
+            $('#CreateMailChimpCampaigns').click(function(){
+
+                $.ajax({
+                  type: 'POST',
+                  url: '/',
+                  success: function(data){
+                    alert(data);
+                  }
+                });
+            });
+
+       });
+  </script>
+</head>
+
+
+<input type="button" id="CreateMailChimpCampaigns" value="Create Mail Chimp Campaigns">
+
+</html>

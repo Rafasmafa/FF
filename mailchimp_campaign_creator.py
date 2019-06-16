@@ -18,6 +18,7 @@ from markdown2 import Markdown
 from selenium import webdriver
 from PIL import Image
 from resizeimage import resizeimage
+from selenium.webdriver.chrome.options import Options
 
 
 
@@ -56,7 +57,7 @@ class MailChimpCampaignCreator(object):
 
             return trello_cards
 
-        def create_campaigns(self, trello_cards):
+        def create_campaigns(self, trello_cards, in_flask=False):
             list_id = '3097db167f'
             for card in trello_cards:
                 if self.validate_links(card) and self.validate_email(card):
@@ -74,7 +75,7 @@ class MailChimpCampaignCreator(object):
                         "subject_line": card['name'],
                         "from_name": "FeastFlow",
                         "reply_to": 'hello@feastflow.com'}
-                    screenshot_url = self.get_screenshot(card)
+                    screenshot_url = self.get_screenshot(card, in_flask)
 
                     if screenshot_url:
                         html = premium_w_screenshot
@@ -101,7 +102,7 @@ class MailChimpCampaignCreator(object):
 
             return segments
 
-        def get_screenshot(self, trello_card):
+        def get_screenshot(self, trello_card, in_flask=False):
             attachment = self.trello.cards.get_attachment(trello_card['id'])
 
             try:
@@ -112,8 +113,15 @@ class MailChimpCampaignCreator(object):
                     url = re.search(url_regex, str(trello_card['desc'].encode('utf-8'))).group()
                     url = url.strip('URL: <')
                     url = url.strip('>')
-                    DRIVER = os.path.join(os.getcwd(), 'drivers', 'chromedriver')
-                    driver = webdriver.Chrome(DRIVER)
+                    if in_flask:
+                        chrome_options = Options()
+                        chrome_options.binary_location = os.environ['GOOGLE_CHROME_BIN']
+                        chrome_options.add_argument('--disable-gpu')
+                        chrome_options.add_argument('--no-sandbox')
+                        driver = webdriver.Chrome(executable_path=os.environ['CHROMEDRIVER_PATH'], chrome_options=chrome_options)
+                    else:
+                        DRIVER = os.path.join(os.getcwd(), 'drivers', 'chromedriver')
+                        driver = webdriver.Chrome(DRIVER)
                     driver.get(url)
                     time.sleep(3) # wait for page to load
                     screenshot = driver.save_screenshot('lead_screenshot.png')
