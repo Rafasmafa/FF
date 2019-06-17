@@ -1,2 +1,2 @@
-web: gunicorn flask/__init__:app
+web: gunicorn flask.create_campaigns:app
 worker: python feedbin_filter.py --help
