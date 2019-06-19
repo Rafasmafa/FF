@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 import requests
-import argparse
-import pprint
 import os
 import re
 import time
-import sys
 import neverbounce_sdk
 
 
@@ -21,10 +18,7 @@ from resizeimage import resizeimage
 from selenium.webdriver.chrome.options import Options
 
 
-
-
 class MailChimpCampaignCreator(object):
-
 
         def __init__(self):
             self.list_id = 'f875825c0f'
@@ -47,7 +41,7 @@ class MailChimpCampaignCreator(object):
                              'interaction design (web design/mobile design/ui/ux)': '6958995281',
                              'graphic design (branding/logos/animations/illustrations)': '6f583d899e'
 
-                          }
+                             }
 
         def get_cards_to_send(self):
             trello_cards = []
@@ -58,7 +52,6 @@ class MailChimpCampaignCreator(object):
             return trello_cards
 
         def create_campaigns(self, trello_cards, in_flask=False):
-            list_id = '3097db167f'
             for card in trello_cards:
                 if self.validate_links(card) and self.validate_email(card):
                     segments = self.get_list_segments(card)
@@ -90,13 +83,14 @@ class MailChimpCampaignCreator(object):
                     campaign = self.client.campaigns
                     campaign.create(data_dict)
                     campaign.content.get(campaign.campaign_id)
-                    campaign.content.update(campaign.campaign_id, {'html':html})
+                    campaign.content.update(
+                        campaign.campaign_id, {'html': html})
                 else:
                     continue
 
         def get_list_segments(self, trello_card):
 
-            segments = [] 
+            segments = []
             for label in trello_card['labels']:
                 segments.append(self.segments[label['name'].lower()])
 
@@ -110,20 +104,24 @@ class MailChimpCampaignCreator(object):
             except (KeyError, IndexError):
                 try:
                     url_regex = r'URL: <https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)>'
-                    url = re.search(url_regex, str(trello_card['desc'].encode('utf-8'))).group()
+                    url = re.search(url_regex, str(
+                        trello_card['desc'].encode('utf-8'))).group()
                     url = url.strip('URL: <')
                     url = url.strip('>')
                     if in_flask:
                         chrome_options = Options()
-                        chrome_options.binary_location = os.environ['GOOGLE_CHROME_BIN']
+                        chrome_options.binary_location = \
+                            os.environ['GOOGLE_CHROME_BIN']
                         chrome_options.add_argument('--disable-gpu')
                         chrome_options.add_argument('--no-sandbox')
-                        driver = webdriver.Chrome(executable_path=os.environ['CHROMEDRIVER_PATH'], chrome_options=chrome_options)
+                        driver = webdriver.Chrome(
+                            executable_path=os.environ['CHROMEDRIVER_PATH'],\
+                            chrome_options=chrome_options)
                     else:
                         DRIVER = os.path.join(os.getcwd(), 'drivers', 'chromedriver')
                         driver = webdriver.Chrome(DRIVER)
                     driver.get(url)
-                    time.sleep(3) # wait for page to load
+                    time.sleep(3)  # wait for page to load
                     screenshot = driver.save_screenshot('lead_screenshot.png')
                     driver.quit()
 
@@ -137,12 +135,13 @@ class MailChimpCampaignCreator(object):
                     self.upload_file_to_trello_card(trello_card['id'], ss_path)
                     os.remove(ss_path)
 
-                    return self.trello.cards.get_attachment(trello_card['id'])[0]["url"]
+                    return self.trello.cards.get_attachment(
+                        trello_card['id'])[0]["url"]
 
                 except AttributeError:
-                    print 'Failed to get screenshot for {}'.format(trello_card['name'].encode('utf-8'))
+                    print 'Failed to get screenshot for {}'.format(
+                        trello_card['name'].encode('utf-8'))
                     return ''
-
 
         def get_card_content(self, trello_card):
             return self.markdown2html.convert(trello_card['desc'])
@@ -169,13 +168,15 @@ class MailChimpCampaignCreator(object):
             for link in links:
                 request = requests.get(link.group(0))
                 if request.status_code in [200, 403, 999, 406]:
-                     continue
+                    continue
                 else:
                     # move card to broken link column
-                    self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
-                    print "Broken Link in {} with status code {}: {}".format(trello_card['name'].encode('utf-8'),
-                                                                             request.status_code,
-                                                                             link.group(0))
+                    self.trello.cards.update_idList(
+                        trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    print "Broken Link in {} with status code {}: {}".format(
+                        trello_card['name'].encode('utf-8'),
+                        request.status_code,
+                        link.group(0))
                     return False
             return True
 
@@ -186,29 +187,19 @@ class MailChimpCampaignCreator(object):
             for address in emails:
                 resp = client.single_check(address)
 
-                if resp['result'] in ['valid', 'catchall']:
+                if resp['result'] in ['valid', 'catchall', 'unknown']:
                     continue
-                elif resp['result'] == 'unknown':
-                    print ("Status of email address for {} is unknown, do you still "
-                           "want to send it?[Y/N]".format(trello_card['name'].encode("utf-8")))
-                    sys.stdout.flush()
-                    answer = raw_input()
-                    if answer.lower == 'y':
-                        continue
-                    elif answer.lower == 'n':
-                        return False
-                    else:
-                        print 'invalid input'
-                        print 'skipping card'
-
                 else:
                     # move card to broken link column
-                    self.trello.cards.update_idList(trello_card['id'], "5c55ae09f1d4eb1efb039019")
-                    print "Email Bounced in {}: {}".format(trello_card['name'].encode("utf-8"), address)
+                    self.trello.cards.update_idList(
+                        trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    print "Email Bounced in {}: {}".format(
+                        trello_card['name'].encode("utf-8"), address)
                     return False
             return True
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     MCCC = MailChimpCampaignCreator()
     cards = MCCC.get_cards_to_send()
     MCCC.create_campaigns(cards)
