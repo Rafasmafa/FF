@@ -2,7 +2,7 @@ import sys
 
 from flask import Flask, render_template, request
 from views.pages import pages
-from FeastFlow.mailchimp_campaign_creator import MailChimpCampaignCreator
+from mailchimp_campaign_creator import MailChimpCampaignCreator
 
 app = Flask(__name__)
 app.register_blueprint(pages, url_prefix='/pages')

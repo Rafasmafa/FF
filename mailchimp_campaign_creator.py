@@ -168,7 +168,7 @@ class MailChimpCampaignCreator(object):
             links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
                 request = requests.get(link.group(0))
-                if request.status_code in [200, 403, 999]:
+                if request.status_code in [200, 403, 999, 406]:
                      continue
                 else:
                     # move card to broken link column
