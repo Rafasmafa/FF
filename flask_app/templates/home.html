@@ -10,12 +10,15 @@
        $(document).ready(function(){
 
             $('#CreateMailChimpCampaigns').click(function(){
-
+				$("#CreateMailChimpCampaigns").prop("disabled", true);
+				$("#CreateMailChimpCampaigns").html("Working...");
                 $.ajax({
                   type: 'POST',
                   url: '/',
                   success: function(data){
                     alert(data);
+                    $("#CreateMailChimpCampaigns").prop("disabled", false);
+                    $("#CreateMailChimpCampaigns").html("Complete! Run Again?");
                   }
                 });
             });
@@ -25,6 +28,6 @@
 </head>
 
 
-<input type="button" id="CreateMailChimpCampaigns" value="Create Mail Chimp Campaigns">
+<button type="button" name="CreateMailChimpCampaigns" id="CreateMailChimpCampaigns" value="Create Mail Chimp Campaigns">Create Mail Chimp Campaigns</button>
 
 </html>

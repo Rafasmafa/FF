@@ -14,9 +14,9 @@ def create_camapigns():
         MCCC = MailChimpCampaignCreator()
         cards = MCCC.get_cards_to_send()
         MCCC.create_campaigns(cards, in_flask=True)
-        return sys.stdout
+        return 'Campaigns Created!'
 
-    return 'Error Creating Campaigns'
+    return 'There was a error creating campaigns. Please contact Nick'
 
 @app.route('/')
 def homepage():
