@@ -114,8 +114,9 @@ class MailChimpCampaignCreator(object):
                             os.environ['GOOGLE_CHROME_BIN']
                         chrome_options.add_argument('--disable-gpu')
                         chrome_options.add_argument('--no-sandbox')
+                        chrome_options.add_argument('--disable-dev-shm-usage')
                         driver = webdriver.Chrome(
-                            executable_path=os.environ['CHROMEDRIVER_PATH'],\
+                            executable_path=str(os.environ.get('CHROMEDRIVER_PATH')),
                             chrome_options=chrome_options)
                     else:
                         DRIVER = os.path.join(os.getcwd(), 'drivers', 'chromedriver')
