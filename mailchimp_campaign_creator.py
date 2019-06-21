@@ -16,6 +16,7 @@ from selenium import webdriver
 from PIL import Image
 from resizeimage import resizeimage
 from selenium.webdriver.chrome.options import Options
+from requests.exceptions import ConnectionError
 
 
 class MailChimpCampaignCreator(object):
@@ -168,17 +169,21 @@ class MailChimpCampaignCreator(object):
             url_regex = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)'
             links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
-                request = requests.get(link.group(0))
+                try:
+                    request = requests.get(link.group(0))
+                except ConnectionError:
+                    self.__move_card_to_broken_link_column(trello_card)
+                    return False
+
                 if request.status_code in [200, 403, 999, 406]:
                     continue
                 else:
-                    # move card to broken link column
-                    self.trello.cards.update_idList(
-                        trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    self.__move_card_to_broken_link_column(trello_card)
                     print "Broken Link in {} with status code {}: {}".format(
                         trello_card['name'].encode('utf-8'),
                         request.status_code,
                         link.group(0))
+
                     return False
             return True
 
@@ -192,13 +197,16 @@ class MailChimpCampaignCreator(object):
                 if resp['result'] in ['valid', 'catchall', 'unknown']:
                     continue
                 else:
-                    # move card to broken link column
-                    self.trello.cards.update_idList(
-                        trello_card['id'], "5c55ae09f1d4eb1efb039019")
+                    self.__move_card_to_broken_link_column(trello_card)
                     print "Email Bounced in {}: {}".format(
                         trello_card['name'].encode("utf-8"), address)
                     return False
             return True
+
+        def __move_card_to_broken_link_column(self, trello_card):
+            # move card to broken link column
+            self.trello.cards.update_idList(
+                trello_card['id'], "5c55ae09f1d4eb1efb039019")
 
 
 if __name__ == "__main__":
