@@ -192,14 +192,16 @@ class MailChimpCampaignCreator(object):
             email_regex = r'[\w\.-]+@[\w\.-]+'
             emails = re.findall(email_regex, str(trello_card['desc'].encode('utf-8')))
             for address in emails:
+                if not address[-1].isalpha():
+                    del address[-1]
                 resp = client.single_check(address)
 
                 if resp['result'] in ['valid', 'catchall', 'unknown']:
                     continue
                 else:
                     self.__move_card_to_broken_link_column(trello_card)
-                    print "Email Bounced in {}: {}".format(
-                        trello_card['name'].encode("utf-8"), address)
+                    print "Email Bounced in {}: {} with return code '{}'".format(
+                        trello_card['name'].encode("utf-8"), address, resp['result'])
                     return False
             return True
 
