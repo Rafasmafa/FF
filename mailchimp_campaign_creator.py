@@ -5,7 +5,6 @@ import os
 import re
 import time
 import neverbounce_sdk
-import sys
 
 
 from mailchimp3 import MailChimp
@@ -55,8 +54,6 @@ class MailChimpCampaignCreator(object):
 
         def create_campaigns(self, trello_cards, in_flask=False):
             for card in trello_cards:
-                print "Creating campaign for {}".format(card['name'].encode('utf-8'))
-                sys.stdout.flush()
                 if self.validate_links(card) and self.validate_email(card):
                     segments = self.get_list_segments(card)
                     data_dict = {}
@@ -90,7 +87,6 @@ class MailChimpCampaignCreator(object):
                     campaign.content.get(campaign.campaign_id)
                     campaign.content.update(
                         campaign.campaign_id, {'html': html})
-                print 'done!'
 
         def get_list_segments(self, trello_card):
 
@@ -120,8 +116,6 @@ class MailChimpCampaignCreator(object):
                     url = url.strip('URL: <')
                     url = url.strip('>')
                     if in_flask:
-                        print "setting up chromedriver"
-                        sys.stdout.flush()
                         chrome_options = Options()
                         chrome_options.binary_location = \
                             os.environ['GOOGLE_CHROME_BIN']
@@ -138,8 +132,6 @@ class MailChimpCampaignCreator(object):
                     driver.get(url)
                     time.sleep(3)  # wait for page to load
                     screenshot = driver.save_screenshot('lead_screenshot.png')
-                    print "got screenshot"
-                    sys.stdout.flush()
                     driver.quit()
 
                     # resize image
@@ -178,12 +170,8 @@ class MailChimpCampaignCreator(object):
             files = {'file': open(file_path, 'rb')}
             url = ATTACHMENTS_URL % card_id
             requests.post(url, params=params, files=files)
-            print 'successfully uploaded screenshot to trello card'
-            sys.stdout.flush()
 
         def validate_links(self, trello_card):
-            print "Validating all links in trello card"
-            sys.stdout.flush()
             url_regex = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)'
             links = re.finditer(url_regex, str(trello_card['desc'].encode('utf-8')))
             for link in links:
@@ -203,13 +191,10 @@ class MailChimpCampaignCreator(object):
                         link.group(0))
 
                     return False
-            print "All links valid"
-            sys.stdout.flush()
             return True
 
         def validate_email(self, trello_card):
-            print "Print validating all emails in trello card"
-            sys.stdout.flush()
+
             client = neverbounce_sdk.client(api_key=self.never_bouce_apy_key)
             email_regex = r'[\w\.-]+@[\w\.-]+'
             emails = re.findall(email_regex, str(trello_card['desc'].encode('utf-8')))
@@ -225,8 +210,7 @@ class MailChimpCampaignCreator(object):
                     print "Email Bounced in {}: {} with return code '{}'".format(
                         trello_card['name'].encode("utf-8"), address, resp['result'])
                     return False
-            print "All emails valid"
-            sys.stdout.flush()
+
             return True
 
         def __move_card_to_broken_link_column(self, trello_card):
