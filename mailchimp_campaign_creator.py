@@ -103,9 +103,16 @@ class MailChimpCampaignCreator(object):
         def get_screenshot(self, trello_card, in_flask=False):
             attachment = self.trello.cards.get_attachment(trello_card['id'])
 
-            if attachment[0]["url"][-3] == 'png':
-                return attachment[0]["url"]
-            else:
+            try:
+                # if an attachment exists and its an image
+                # do not get a screenshot
+                if attachment[0]["url"][-3] == 'png':
+                    return attachment[0]["url"]
+                else:
+                    # if its not an image then raise a key error so
+                    # we can hit the exception below and get a screenshot
+                    raise KeyError
+            except (KeyError, IndexError):
                 try:
                     url_regex = r'URL: <https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)>'
                     url = re.search(url_regex, str(

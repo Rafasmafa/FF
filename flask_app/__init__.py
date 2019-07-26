@@ -11,12 +11,13 @@ app.register_blueprint(pages, url_prefix='/pages')
 @app.route('/', methods=['POST'])
 def create_camapigns():
     if request.method == 'POST':
-        MCCC = MailChimpCampaignCreator()
-        cards = MCCC.get_cards_to_send()
-        MCCC.create_campaigns(cards, in_flask=True)
-        return 'Campaigns Created!'
-
-    return 'There was a error creating campaigns. Please contact Nick'
+        try:
+            MCCC = MailChimpCampaignCreator()
+            cards = MCCC.get_cards_to_send()
+            MCCC.create_campaigns(cards, in_flask=True)
+            return 'Campaigns Created!'
+        except Exception:
+            return 'There was a error creating campaigns. Please contact Nick'
 
 @app.route('/')
 def homepage():
