@@ -16,7 +16,8 @@ def create_camapigns():
             cards = MCCC.get_cards_to_send()
             MCCC.create_campaigns(cards, in_flask=True)
             return 'Campaigns Created!'
-        except Exception:
+        except Exception as e:
+            print e.message
             return 'There was a error creating campaigns. Please contact Nick'
 
 @app.route('/')

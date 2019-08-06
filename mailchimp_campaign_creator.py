@@ -200,7 +200,7 @@ class MailChimpCampaignCreator(object):
             emails = re.findall(email_regex, str(trello_card['desc'].encode('utf-8')))
             for address in emails:
                 if not address[-1].isalpha():
-                    del address[-1]
+                    address = address[:-1]
                 resp = client.single_check(address)
 
                 if resp['result'] in ['valid', 'catchall', 'unknown']:
