@@ -5,6 +5,7 @@ import os
 import re
 import time
 import neverbounce_sdk
+import pytz
 
 
 from mailchimp3 import MailChimp
@@ -17,12 +18,14 @@ from PIL import Image
 from resizeimage import resizeimage
 from selenium.webdriver.chrome.options import Options
 from requests.exceptions import ConnectionError
+from datetime import datetime
 
 
 class MailChimpCampaignCreator(object):
 
         def __init__(self):
             self.list_id = 'f875825c0f'
+            self.free_list_id = 'ee5aed6bbb'
             self.segement_field_id = 'interests-ddaa47f9ce'
             self.trello_token = os.environ['TRELLO_TOKEN']
             self.trello_key = os.environ['TRELLO_API_KEY']
@@ -45,12 +48,7 @@ class MailChimpCampaignCreator(object):
                              }
 
         def get_cards_to_send(self):
-            trello_cards = []
-            complete_cards = self.trello.lists.get_card('5bb1e965e5336c5390e7e505')
-            for card in complete_cards:
-                trello_cards.append(card)
-
-            return trello_cards
+            return self.trello.lists.get_card('5bb1e965e5336c5390e7e505')
 
         def create_campaigns(self, trello_cards, in_flask=False):
             for card in trello_cards:
@@ -60,11 +58,14 @@ class MailChimpCampaignCreator(object):
                     data_dict['type'] = 'regular'
                     data_dict['content_type'] = 'html'
                     data_dict["recipients"] = {'list_id': self.list_id,
-                                               'segment_opts': {'match': 'any'}}
-                    data_dict["recipients"]['segment_opts']['conditions'] = [{"condition_type": "Interests",
-                                                                             'op': 'interestcontains',
-                                                                            'field': self.segement_field_id,
-                                                                            'value': segments}]
+                                               'segment_opts': {'match': 'any'}
+                                               }
+                    data_dict["recipients"]['segment_opts']['conditions'] = [
+                        {"condition_type": "Interests",
+                         'op': 'interestcontains',
+                         'field': self.segement_field_id,
+                         'value': segments}]
+
                     data_dict['settings'] = {
                         "title": card['name'],
                         "subject_line": card['name'],
@@ -87,6 +88,33 @@ class MailChimpCampaignCreator(object):
                     campaign.content.get(campaign.campaign_id)
                     campaign.content.update(
                         campaign.campaign_id, {'html': html})
+                    if card['badges']['checkItemsChecked'] == 1:
+                        checkedItems = self.trello.checklists.get_checkItem(
+                            card['idChecklists'][0])
+
+                        # get date to send
+                        time_str = checkedItems[0]['name'].strip('send on ')
+                        mdy = time_str.split('/')
+
+                        # set for 6pm est on date given
+                        schedule_time = datetime(
+                            int(mdy[2]), int(mdy[0]), int(mdy[1]), 17)
+
+                        local = pytz.timezone ("America/Atikokan")
+                        local_dt = local.localize(schedule_time, is_dst=None)
+                        utc_schedule_time = local_dt.astimezone(pytz.utc)
+
+                        free_campaign = self.client.campaigns
+                        data_dict['type'] = 'regular'
+                        data_dict['recipients'] = {'list_id': self.free_list_id}
+                        free_campaign.create(data_dict)
+                        free_campaign.content.get(campaign.campaign_id)
+                        free_campaign.content.update(
+                            free_campaign.campaign_id, {'html': html})
+
+                        free_campaign.actions.schedule(
+                            free_campaign.campaign_id,
+                            {'schedule_time': utc_schedule_time})
 
         def get_list_segments(self, trello_card):
 

@@ -18,17 +18,12 @@ def create_camapigns():
             return 'Campaigns Created!'
         except Exception as e:
             print e.message
-            return 'There was a error creating campaigns. Please contact Nick'
+            return ('There was a error creating campaigns.'
+                    'Please contact Nick \n Error: {}'.format(e))
 
 @app.route('/')
 def homepage():
     return render_template("home.html")
-
-#@app.route('/page_<num>')
-#def pages(num):
-#     return render_template('pages/page.html', num=num)
-#     return render_template('pages/page.html', num=num)
-
 
 if __name__ == "__main__":
     app.run()

@@ -10,7 +10,8 @@ from difflib import SequenceMatcher
 from html2text import HTML2Text
 from datetime import datetime, timedelta
 from trello import TrelloApi
-#from database import database_api
+# from database import database_api
+
 
 class FeedbinFilter(object):
 
@@ -26,7 +27,6 @@ class FeedbinFilter(object):
         self.html_handler.ignore_images = True
         self.html_handler.ignore_tables = True
         self.html_handler.ignore_emphasis = True
-        #self.html_handler.ignore_links = True
         self.authenticate()
         self.contacted_leads = os.path.join('reddit/freelancer_list.json')
         self.reddit_json = os.path.join('reddit/reddit_leads_tagged.json')
@@ -34,42 +34,47 @@ class FeedbinFilter(object):
         # Case doesnt matter for filters, they all get
         # moved to lower case when time to compare
         self.tech_filters = ['python', 'php', 'wordpress',
-                            'web developer', 'ruby', 'django',
-                            'django', 'flask', 'drupal', 'ios',
-                            'android', 'node', 'meteor', 'vue.js'
-                            'web development', 'laravel',
-                            'react','rails','html', 'css',
-                            'javascript', 'java script','js', 'angular',
-                            'shopify', 'product design', 'packaging design',
-                            'package design', 'UX/UI', 'User Interface',
-                            'UX Designer', 'UI Designer', 'Product Design',
-                            'Branding', 'Animation', 'Logo Design', 'Illustration',
-                            'Mobile Design', 'web design', 'website design',
-                            'visual design', 'Graphic Design', 'developer',
-                            'packaging', 'software engineer']
+                             'web developer', 'ruby', 'django',
+                             'django', 'flask', 'drupal', 'ios',
+                             'android', 'node', 'meteor', 'vue.js'
+                             'web development', 'laravel',
+                             'react', 'rails', 'html', 'css',
+                             'javascript', 'java script', 'js', 'angular',
+                             'shopify', 'product design', 'packaging design',
+                             'package design', 'UX/UI', 'User Interface',
+                             'UX Designer', 'UI Designer', 'Product Design',
+                             'Branding', 'Animation', 'Logo Design',
+                             'Illustration', 'Mobile Design', 'web design',
+                             'website design', 'visual design',
+                             'Graphic Design', 'developer', 'packaging',
+                             'software engineer']
 
         self.freelance_filters = ['freelance', 'remote', 'contract',
-                                'short term', 'long term', 'free lance'
-                                'contractor', 'gig', 'anywhere', 'project',
-                                'free-lance', 'short-term', 'long-term', 'rfp']
+                                  'short term', 'long term', 'free lance'
+                                  'contractor', 'gig', 'anywhere', 'project',
+                                  'free-lance', 'short-term', 'long-term',
+                                  'rfp', 'rfq', 'request for proposal',
+                                  'request for quote']
 
-        self.negative_filters = ['full time', 'fulltime', 'full-time', '401k' ,'401(k)',
-                                 'intern', 'career', 'on site only', 'on-site only', 'writer']
+        self.negative_filters = ['full time', 'fulltime', 'full-time', '401k',
+                                 '401(k)', 'intern', 'career', 'on site only',
+                                 'on-site only', 'writer']
 
         self.reddit_filters = ['python', 'php', 'wordpress develop',
-                            'web develop', 'ruby', 'django',
-                            'django', 'flask', 'drupal', 'ios',
-                            'android', 'node js', 'meteor js', 'vue js',
-                             'node.js', 'meteor.js', 'vue.js'
-                            'web development', 'laravel',
-                            'react.js', 'react js','ruby on rails','html', 'css',
-                            'javascript', 'java script','angular',
-                            'shopify', 'product design', 'packaging design',
-                            'package design', 'UX/UI', 'User Interface',
-                            'UX Design', 'UI Design', 'Product Design',
-                            'Branding', 'Logo Design', 'Illustration',
-                            'Mobile Design', 'web design', 'website design',
-                            'visual design', 'Graphic Design']
+                               'web develop', 'ruby', 'django',
+                               'django', 'flask', 'drupal', 'ios',
+                               'android', 'node js', 'meteor js', 'vue js',
+                               'node.js', 'meteor.js', 'vue.js'
+                               'web development', 'laravel',
+                               'react.js', 'react js', 'ruby on rails',
+                               'html', 'css', 'angular',
+                               'javascript', 'java script',
+                               'shopify', 'product design', 'packaging design',
+                               'package design', 'UX/UI', 'User Interface',
+                               'UX Design', 'UI Design', 'Product Design',
+                               'Branding', 'Logo Design', 'Illustration',
+                               'Mobile Design', 'web design', 'website design',
+                               'visual design', 'Graphic Design']
 
         self.label_dict = {
             'red': ['ruby', 'rails', 'shopify'],
@@ -80,7 +85,7 @@ class FeedbinFilter(object):
                        'web design', 'website', 'php', 'drupal', 'laravel'],
             'blue':  ['js', 'node', 'meteor', 'javascript', 'java script'],
             'lime': ['web design', 'mobile design', 'UX/UI', 'User Interface',
-                     'UX Designer', 'UI Designer', 'UX expert','UI expert'],
+                     'UX Designer', 'UI Designer', 'UX expert', 'UI expert'],
             'pink': ['graphic design', 'logo', 'illustration', 'animation',
                      'branding', 'Product Design', 'product design',
                      'packaging design', 'illustrate']
@@ -96,7 +101,6 @@ class FeedbinFilter(object):
             'lime': 'ux',
             'pink': 'graphic design'
             }
-
 
     def authenticate(self):
         response = requests.get(
@@ -166,9 +170,11 @@ class FeedbinFilter(object):
         for entry in entries:
             if '[for hire]' in entry['title'].lower():
                 for keyword in self.reddit_filters:
-                    if keyword.lower() in entry['content'].lower().encode('utf-8'):
+                    if (keyword.lower() in
+                            entry['content'].lower().encode('utf-8')):
                         username = self.get_reddit_username(entry)
-                        if username not in known_usernames and username not in new_names:
+                        if (username not in known_usernames and
+                                username not in new_names):
                             new_names[username] = self.tag_reddit_leads(entry)
                             count += 1
                             break
@@ -194,15 +200,19 @@ class FeedbinFilter(object):
         #if extra:
             #entries.extend(extra)
 
-        self.freelance_matches = self._filter(self.freelance_filters, entries, to_markdown=True)
-        self.tech_matches_not_confirmed = self._filter(self.tech_filters, entries, to_markdown=True)
-        self.tech_matches = self._filter(self.tech_filters, self.freelance_matches)
-        self.freelance_matches = self.remove_duplicates(self.freelance_matches, self.tech_matches)
-
+        self.freelance_matches = self._filter(
+            self.freelance_filters, entries, to_markdown=True)
+        self.tech_matches_not_confirmed = self._filter(
+            self.tech_filters, entries, to_markdown=True)
+        self.tech_matches = self._filter(
+            self.tech_filters, self.freelance_matches)
+        self.freelance_matches = self.remove_duplicates(
+            self.freelance_matches, self.tech_matches)
 
         email_regex = r'[\w\.-]+@[\w\.-]+'
         self.email_matches = self._filter_regex(email_regex, self.tech_matches)
-        self.tech_matches = self.remove_duplicates(self.tech_matches, self.email_matches)
+        self.tech_matches = self.remove_duplicates(self.tech_matches,
+                                                   self.email_matches)
 
         self.tech_matches_not_confirmed = self.remove_duplicates(
             self.tech_matches_not_confirmed, self.freelance_matches)
@@ -211,12 +221,12 @@ class FeedbinFilter(object):
         self.tech_matches_not_confirmed = self.remove_duplicates(
             self.tech_matches_not_confirmed, self.email_matches)
 
-        print '{} leads satisfy freelance filters'.format(len(self.freelance_matches))
+        print '{} leads satisfy freelance filters'.format(
+            len(self.freelance_matches))
         print '{} leads match tech filters'.format(len(self.tech_matches))
         print '{} leads match tech filters but might not be remote or freelance'.format(
             len(self.tech_matches_not_confirmed))
         print '{} leads match email filters'.format(len(self.email_matches))
-
 
     def filter_based_on_date(self, entries, days_ago):
         filtered = []
@@ -250,7 +260,7 @@ class FeedbinFilter(object):
     def _filter_budget(self, budget, data):
         filtered_data = []
         for entry in data:
-            content =  clean_html(entry['content'])
+            content = entry['content']
             digits = [int(s.strip('$')) for s in content.split() if s.strip('$').isdigit()]
 
             for string in content.split():
@@ -258,7 +268,7 @@ class FeedbinFilter(object):
                     try:
                         int(s.strip('k'))
                         if int >= 5:
-                             filtered_data.append(entry)
+                            filtered_data.append(entry)
                     except ValueError:
                         pass
 
@@ -272,7 +282,7 @@ class FeedbinFilter(object):
         filtered_data = []
 
         for entry in data:
-            content =  clean_html(entry['content'])
+            content = entry['content']
             if re.findall(pattern, content):
                 entry['content'] = content
                 filtered_data.append(entry)
@@ -283,7 +293,7 @@ class FeedbinFilter(object):
         filtered_data = []
         for entry in data:
             if entry['content']:
-                content = clean_html(entry['content'].lower())
+                content = entry['content'].lower()
                 dont_add = False
                 for filter in self.negative_filters:
                     if filter in content or '[for hire]' in entry['title'].lower():
@@ -306,23 +316,17 @@ class FeedbinFilter(object):
     def _filter(self, filters, data, to_markdown=False, include_neg=True):
         filtered_data = []
         for entry in data:
-            content = clean_html(entry['content'].lower())
+            content = entry['content'].lower()
             for filter in filters:
                 if filter in content or filter in entry['title'].lower():
                     if to_markdown:
-                        entry['content'] = self.html_handler.handle(entry['content'])
+                        entry['content'] = self.html_handler.handle(
+                            entry['content'])
                     if not self.is_duplicate(filtered_data, entry):
                         filtered_data.append(entry)
                     break
         return filtered_data
 
-def clean_html(raw_html):
-    #===========================================================================
-    # cleanr = re.compile(r'<[^>]+>')
-    # cleantext = re.sub(cleanr, '', raw_html)
-    # return cleantext
-    #===========================================================================
-    return raw_html
 
 def get_card_names(trello_cards):
     names = []
@@ -330,6 +334,7 @@ def get_card_names(trello_cards):
         names.append(card['name'].lower())
 
     return names
+
 
 def tag_cards(trello_obj, trello_list_id):
     label_dict = {
@@ -352,14 +357,15 @@ def tag_cards(trello_obj, trello_list_id):
             for i in label_dict[label]:
                 desc = card['desc'].encode('utf-8').lower()
                 name = card['name'].encode('utf-8').lower()
-                if i in desc or i in name :
+                i = i.lower()
+                if i in desc or i in name:
                     if label not in __get_current_labels(card):
                         trello_obj.cards.new_label(card['id'], label)
-                        new_label = label
                         card = trello_obj.cards.get(card['id'])
-                        while new_label not in __get_current_labels(card):
+                        while label not in __get_current_labels(card):
                             pass
                             # waiting for label to update
+
 
 def __get_current_labels(trello_card):
     labels = []
@@ -368,6 +374,7 @@ def __get_current_labels(trello_card):
 
     return labels
 
+
 def post_to_colony_trello(leads):
     lead_id = '5cf85281ceafe811d744c6d6'
     token = os.environ['TRELLO_TOKEN']
@@ -375,6 +382,7 @@ def post_to_colony_trello(leads):
     trello = TrelloApi(key, token)
     trello.set_token(token)
     _post(leads, lead_id, trello)
+
 
 def post_to_trello(freelance, tech, tech_not_confirmed, email):
     freelance_id = '5bc91cfdcaee543fd465743d'
@@ -402,17 +410,41 @@ def _post(list_of_entries, trello_list_id, trello_obj):
     for entry in list_of_entries:
         if entry['title'].lower() not in existing_cards:
             entry['content'] += "\n Source: <" + entry["url"] + ">"
-            trello_obj.cards.new(entry['title'], trello_list_id, entry['content'])
+            resp = trello_obj.cards.new(entry['title'], trello_list_id, entry['content'])
 
-if __name__== "__main__":
+            # trello api that i'm using is broken.
+            # need to post new checklist manually
+            url = 'https://api.trello.com/1/cards/{}/checklists?name={}&key={}&token={}'
+            resp = requests.post(
+                url.format(resp['id'], 'free?', trello_obj._apikey, trello_obj._token))
+            resp.raise_for_status()
+            checklist_data = json.loads(resp.content)
+
+            #set for 7 days from now
+            future = _get_future()
+            trello_obj.checklists.new_checkItem(
+                checklist_data['id'], "send on {}/{}/{}".format(
+                    future.month, future.day, future.year))
+
+
+def _get_future(days=7):
+    t = datetime.now()
+    d = timedelta(days=days)
+    u = t + d
+    return u
+
+
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--days', '-d', dest='days' , default=1,
-                    type=int, action='store',
-                    help="Number of days to look for entries")
+    parser.add_argument('--days', '-d', dest='days', default=1,
+                        type=int, action='store',
+                        help="Number of days to look for entries")
     parser.add_argument('--get_lws', action='store_true', default=False)
-    parser.add_argument('--generate_colony_content_leads', '-gccl', action='store_true', default=False)
-    parser.add_argument('--generate_reddit_leads', '-grl', action='store_true', default=False)
+    parser.add_argument('--generate_colony_content_leads',
+                        '-gccl', action='store_true', default=False)
+    parser.add_argument('--generate_reddit_leads', '-grl',
+                        action='store_true', default=False)
     args = parser.parse_args()
 
     feedbin = FeedbinFilter()
