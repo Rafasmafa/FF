@@ -10,7 +10,7 @@ from difflib import SequenceMatcher
 from html2text import HTML2Text
 from datetime import datetime, timedelta
 from trello import TrelloApi
-# from database import database_api
+#from database import database_api
 
 
 class FeedbinFilter(object):
@@ -54,7 +54,10 @@ class FeedbinFilter(object):
                                   'contractor', 'gig', 'anywhere', 'project',
                                   'free-lance', 'short-term', 'long-term',
                                   'rfp', 'rfq', 'request for proposal',
-                                  'request for quote']
+                                  'request for quote', 'website design',
+                                  'website redesign', 'website migration',
+                                  'website development', 'website refresh',
+                                  'web design']
 
         self.negative_filters = ['full time', 'fulltime', 'full-time', '401k',
                                  '401(k)', 'intern', 'career', 'on site only',
