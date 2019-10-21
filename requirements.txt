@@ -44,5 +44,5 @@ trello==0.9.1
 Twisted==17.1.0
 urllib3==1.23
 w3lib==1.17.0
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 zope.interface==4.4.1
