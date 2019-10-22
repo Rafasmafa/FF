@@ -24,7 +24,7 @@ markdown2==2.3.7
 MarkupSafe==1.0
 neverbounce-sdk==4.2.6
 parsel==1.2.0
-Pillow==5.4.1
+Pillow==6.2.0
 pyasn1==0.2.3
 pyasn1-modules==0.0.9
 pycparser==2.17
