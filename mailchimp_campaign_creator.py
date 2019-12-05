@@ -93,7 +93,7 @@ class MailChimpCampaignCreator(object):
                             card['idChecklists'][0])
 
                         # get date to send
-                        time_str = checkedItems[0]['name'].strip('send on ')
+                        time_str = checkedItems[0]['name'].lower().strip('send on ')
                         mdy = time_str.split('/')
 
                         # set for 6pm est on date given
